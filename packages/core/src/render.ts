@@ -107,15 +107,11 @@ function getSharedMd() {
   return sharedMdInstance;
 }
 
-export function buildCard(
-  markdown: string,
-  options?: InkrollOptions,
-  extensions?: CoreExtensions
+function createCardFrame(
+  cfg: ReturnType<typeof normalizeConfig>,
+  theme: (typeof THEMES)[keyof typeof THEMES],
+  vars: (typeof THEME_VARS)[keyof typeof THEME_VARS]
 ): HTMLElement {
-  const cfg = normalizeConfig(options);
-  const theme = THEMES[cfg.theme] || THEMES['classic-white'];
-  const vars = THEME_VARS[cfg.theme] || THEME_VARS['classic-white'];
-
   const card = document.createElement('div');
   card.className = `inkroll-card pad-${cfg.padding}`;
   card.setAttribute('data-inkroll-card', 'true');
@@ -129,6 +125,39 @@ export function buildCard(
   for (const k in vars) {
     card.style.setProperty(k, vars[k]);
   }
+  return card;
+}
+
+function createBodyContainer(cfg: ReturnType<typeof normalizeConfig>): HTMLElement {
+  const body = document.createElement('div');
+  const isCustomSize = typeof cfg.fontSize === 'number' && isFinite(cfg.fontSize);
+  const legacySizeClass = typeof cfg.fontSize === 'string' && cfg.fontSize !== 'base' ? ` fs-${cfg.fontSize}` : '';
+  body.className = `md-body md-font-${cfg.fontFamily}${legacySizeClass}${cfg.lineHeight !== 'relaxed' ? ` lh-${cfg.lineHeight}` : ''}`;
+  if (isCustomSize) {
+    body.style.fontSize = `${cfg.fontSize}px`;
+  }
+  return body;
+}
+
+function createFooter(text: string, position: 'bottom-center' | 'bottom-right' = 'bottom-right'): HTMLElement {
+  const footer = document.createElement('div');
+  footer.className = `card-footer ${position === 'bottom-center' ? 'center' : 'right'}`;
+  const span = document.createElement('span');
+  span.textContent = text;
+  footer.appendChild(span);
+  return footer;
+}
+
+export function buildCard(
+  markdown: string,
+  options?: InkrollOptions,
+  extensions?: CoreExtensions
+): HTMLElement {
+  const cfg = normalizeConfig(options);
+  const theme = THEMES[cfg.theme] || THEMES['classic-white'];
+  const vars = THEME_VARS[cfg.theme] || THEME_VARS['classic-white'];
+
+  const card = createCardFrame(cfg, theme, vars);
 
   if (cfg.showTitle && cfg.titleText) {
     const titleBox = document.createElement('div');
@@ -139,14 +168,7 @@ export function buildCard(
     card.appendChild(titleBox);
   }
 
-  const body = document.createElement('div');
-  const isCustomSize = typeof cfg.fontSize === 'number' && isFinite(cfg.fontSize);
-  const legacySizeClass = typeof cfg.fontSize === 'string' && cfg.fontSize !== 'base' ? ` fs-${cfg.fontSize}` : '';
-  body.className = `md-body md-font-${cfg.fontFamily}${legacySizeClass}${cfg.lineHeight !== 'relaxed' ? ` lh-${cfg.lineHeight}` : ''}`;
-  if (isCustomSize) {
-    body.style.fontSize = `${cfg.fontSize}px`;
-  }
-
+  const body = createBodyContainer(cfg);
   const { html, mathBlocks } = parseMarkdown(markdown, getSharedMd());
   body.innerHTML = html;
 
@@ -160,13 +182,118 @@ export function buildCard(
   card.appendChild(body);
 
   if (cfg.showWatermark && cfg.watermarkText) {
-    const footer = document.createElement('div');
-    footer.className = `card-footer ${cfg.watermarkPosition === 'bottom-center' ? 'center' : 'right'}`;
-    const span = document.createElement('span');
-    span.textContent = cfg.watermarkText;
-    footer.appendChild(span);
-    card.appendChild(footer);
+    card.appendChild(createFooter(cfg.watermarkText, cfg.watermarkPosition));
   }
 
   return card;
+}
+
+/**
+ * 智能分页切片：按照社交媒体（小红书 / 微博）黄金比例，在完整段落/块边界处安全断页，
+ * 绝不断字断行，生成多张独立排版的精美卡片。
+ */
+export async function buildCardPages(
+  markdown: string,
+  options?: InkrollOptions,
+  extensions?: CoreExtensions
+): Promise<HTMLElement[]> {
+  const cfg = normalizeConfig(options);
+  const theme = THEMES[cfg.theme] || THEMES['classic-white'];
+  const vars = THEME_VARS[cfg.theme] || THEME_VARS['classic-white'];
+
+  // 先构建完整卡片并等待异步图表完成
+  const fullCard = buildCard(markdown, options, extensions);
+  if (extensions?.mermaidRenderer) {
+    await processMermaid(fullCard, extensions);
+  }
+
+  // 非浏览器环境安全降级为单卡片
+  if (typeof document === 'undefined' || !document.body) {
+    return [fullCard];
+  }
+
+  const bodyEl = fullCard.querySelector('.md-body');
+  if (!bodyEl) return [fullCard];
+
+  const children = Array.from(bodyEl.children) as HTMLElement[];
+  if (children.length <= 1) {
+    return [fullCard];
+  }
+
+  // 临时挂载到离屏容器中测量各块实际像素高度
+  const host = document.createElement('div');
+  host.style.cssText =
+    'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;';
+  host.appendChild(fullCard);
+  document.body.appendChild(host);
+
+  // 社交平台单张图片黄金高度预算（基于卡片宽度，对应 3:4 / 9:16 舒适阅读区间，约 700~800px）
+  const targetBodyHeight = Math.max(600, Math.round(cfg.cardWidth * 1.45));
+
+  const pageGroups: HTMLElement[][] = [];
+  let currentGroup: HTMLElement[] = [];
+  let currentHeight = 0;
+
+  for (const child of children) {
+    const rect = child.getBoundingClientRect();
+    const h = rect.height || 40;
+    const computed = window.getComputedStyle(child);
+    const mt = parseFloat(computed.marginTop) || 0;
+    const mb = parseFloat(computed.marginBottom) || 0;
+    const blockTotalH = h + mt + mb;
+
+    // 当加上当前块会超过单页高度阈值，且当前页已有至少一个块时，进行块安全断页
+    if (currentGroup.length > 0 && currentHeight + blockTotalH > targetBodyHeight) {
+      pageGroups.push(currentGroup);
+      currentGroup = [child];
+      currentHeight = blockTotalH;
+    } else {
+      currentGroup.push(child);
+      currentHeight += blockTotalH;
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    pageGroups.push(currentGroup);
+  }
+
+  document.body.removeChild(host);
+
+  // 若总高度并未超过单张预算，直接返回原卡片
+  if (pageGroups.length <= 1) {
+    return [fullCard];
+  }
+
+  const totalPages = pageGroups.length;
+  const resultCards: HTMLElement[] = [];
+
+  for (let i = 0; i < totalPages; i++) {
+    const card = createCardFrame(cfg, theme, vars);
+
+    // 第一页保留大标题（若启用）
+    if (i === 0 && cfg.showTitle && cfg.titleText) {
+      const titleBox = document.createElement('div');
+      titleBox.className = 'card-title';
+      const titleH = document.createElement('h1');
+      titleH.textContent = cfg.titleText;
+      titleBox.appendChild(titleH);
+      card.appendChild(titleBox);
+    }
+
+    const body = createBodyContainer(cfg);
+    for (const child of pageGroups[i]) {
+      body.appendChild(child.cloneNode(true));
+    }
+    card.appendChild(body);
+
+    // 页脚增加多图页码与落款：例如 "1 / 3 · By InkRoll"
+    if (cfg.showWatermark && cfg.watermarkText) {
+      const pageWatermark = `${i + 1} / ${totalPages} · ${cfg.watermarkText}`;
+      card.appendChild(createFooter(pageWatermark, cfg.watermarkPosition));
+    }
+
+    resultCards.push(card);
+  }
+
+  return resultCards;
 }

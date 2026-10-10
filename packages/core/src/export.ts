@@ -1,4 +1,4 @@
-import { buildCard, processMermaid } from './render';
+import { buildCard, buildCardPages, processMermaid } from './render';
 import { CORE_EMBEDDED_CSS } from './styles/embedded-css';
 import { normalizeConfig } from './themes';
 import type { CoreExtensions, InkrollOptions } from './types';
@@ -153,6 +153,34 @@ export async function renderToImage(
   } finally {
     host.removeChild(card);
   }
+}
+
+export async function renderToMultiImages(
+  markdown: string,
+  options?: InkrollOptions,
+  extensions?: CoreExtensions
+): Promise<string[]> {
+  const cfg = normalizeConfig(options);
+  const pages = await buildCardPages(markdown, options, extensions);
+  const host = getOffscreenHost();
+  const results: string[] = [];
+
+  for (const page of pages) {
+    host.appendChild(page);
+    try {
+      await new Promise((r) => setTimeout(r, 60));
+      try {
+        if (document.fonts?.ready) await document.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+      results.push(await exportElement(page, cfg.exportScale, cfg.exportFormat));
+    } finally {
+      host.removeChild(page);
+    }
+  }
+
+  return results;
 }
 
 export async function downloadCardImage(

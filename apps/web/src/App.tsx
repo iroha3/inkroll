@@ -230,6 +230,8 @@ export default function App() {
         cardRef={cardRef}
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+        content={content}
+        config={config}
       />
     </div>
   );

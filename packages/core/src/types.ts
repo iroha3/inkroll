@@ -76,8 +76,12 @@ export interface InkrollAPI {
   version: string;
   /** 渲染卡片 DOM 节点 */
   render: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) => HTMLElement;
-  /** 渲染并导出为图片 Data URL */
+  /** 按社交媒体黄金高度智能切片生成多张卡片 DOM 节点 */
+  buildPages: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) => Promise<HTMLElement[]>;
+  /** 渲染并导出为单张长图 Data URL */
   toImage: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) => Promise<string>;
+  /** 渲染并导出为社交媒体多图切片 Data URL 列表 */
+  toMultiImages: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) => Promise<string[]>;
   /** 渲染并下载图片 */
   download: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) => Promise<void>;
   /** 直接将某个元素导出为图片 Data URL */
