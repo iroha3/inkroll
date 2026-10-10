@@ -190,7 +190,8 @@ export function buildCard(
 
 /**
  * 智能分页切片：按照社交媒体（小红书 / 微博）黄金比例，在完整段落/块边界处安全断页，
- * 绝不断字断行，生成多张独立排版的精美卡片。
+ * 绝不断字断行，并将所有切片卡片的高度严格统一（通过 Flexbox 布局及 Footer 自动沉底），
+ * 确保多图滑动切换时稳定无抖动，并在各平台（小红书多图轮播）保持划一的画幅比例。
  */
 export async function buildCardPages(
   markdown: string,
@@ -207,16 +208,46 @@ export async function buildCardPages(
     await processMermaid(fullCard, extensions);
   }
 
+  // 社交平台单张图片黄金目标总高度（基于卡片宽度，对应 3:4 ~ 1:1.4 比例，例如 500px 对应 700px）
+  const baseTargetHeight = Math.max(680, Math.round(cfg.cardWidth * 1.4));
+
+  // 统一卡片为 flex 容器，使得正文与页脚自适应且高度稳定一致
+  const formatPagedCard = (card: HTMLElement, height: number) => {
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.boxSizing = 'border-box';
+    card.style.height = `${height}px`;
+    card.style.minHeight = `${height}px`;
+
+    const body = card.querySelector('.md-body') as HTMLElement | null;
+    if (body) {
+      body.style.flex = '1';
+      body.style.display = 'flex';
+      body.style.flexDirection = 'column';
+    }
+
+    const footer = card.querySelector('.card-footer') as HTMLElement | null;
+    if (footer) {
+      footer.style.marginTop = 'auto';
+    }
+  };
+
   // 非浏览器环境安全降级为单卡片
   if (typeof document === 'undefined' || !document.body) {
+    formatPagedCard(fullCard, baseTargetHeight);
     return [fullCard];
   }
 
   const bodyEl = fullCard.querySelector('.md-body');
-  if (!bodyEl) return [fullCard];
+  if (!bodyEl) {
+    formatPagedCard(fullCard, baseTargetHeight);
+    return [fullCard];
+  }
 
   const children = Array.from(bodyEl.children) as HTMLElement[];
   if (children.length <= 1) {
+    // 即使只有单个块，也统一为标准黄金高度
+    formatPagedCard(fullCard, baseTargetHeight);
     return [fullCard];
   }
 
@@ -227,8 +258,14 @@ export async function buildCardPages(
   host.appendChild(fullCard);
   document.body.appendChild(host);
 
-  // 社交平台单张图片黄金高度预算（基于卡片宽度，对应 3:4 / 9:16 舒适阅读区间，约 700~800px）
-  const targetBodyHeight = Math.max(600, Math.round(cfg.cardWidth * 1.45));
+  // 计算每页的正文净高度预算
+  const paddingMap: Record<string, number> = { compact: 48, normal: 64, spacious: 80 };
+  const padH = paddingMap[cfg.padding] || 64;
+  const footerH = cfg.showWatermark ? 60 : 0;
+  const titleH = cfg.showTitle && cfg.titleText ? 72 : 0;
+
+  const pageBudgetNormal = Math.max(460, baseTargetHeight - padH - footerH);
+  const pageBudgetFirst = Math.max(400, baseTargetHeight - padH - footerH - titleH);
 
   const pageGroups: HTMLElement[][] = [];
   let currentGroup: HTMLElement[] = [];
@@ -242,8 +279,10 @@ export async function buildCardPages(
     const mb = parseFloat(computed.marginBottom) || 0;
     const blockTotalH = h + mt + mb;
 
-    // 当加上当前块会超过单页高度阈值，且当前页已有至少一个块时，进行块安全断页
-    if (currentGroup.length > 0 && currentHeight + blockTotalH > targetBodyHeight) {
+    const currentBudget = pageGroups.length === 0 ? pageBudgetFirst : pageBudgetNormal;
+
+    // 当加上当前块会超过单页正文高度预算，且当前页已有至少一个块时，进行块完整边界安全断页
+    if (currentGroup.length > 0 && currentHeight + blockTotalH > currentBudget) {
       pageGroups.push(currentGroup);
       currentGroup = [child];
       currentHeight = blockTotalH;
@@ -259,8 +298,9 @@ export async function buildCardPages(
 
   document.body.removeChild(host);
 
-  // 若总高度并未超过单张预算，直接返回原卡片
+  // 若总高度并未超过单张预算且只分了 1 组，直接返回原卡片并应用统一高度
   if (pageGroups.length <= 1) {
+    formatPagedCard(fullCard, baseTargetHeight);
     return [fullCard];
   }
 
@@ -293,6 +333,30 @@ export async function buildCardPages(
     }
 
     resultCards.push(card);
+  }
+
+  // 离屏测量所有组装后卡片的实际自然高度，寻找最大高度（至少为 baseTargetHeight）
+  const measureHost = document.createElement('div');
+  measureHost.style.cssText =
+    'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;';
+  for (const card of resultCards) {
+    measureHost.appendChild(card);
+  }
+  document.body.appendChild(measureHost);
+
+  let maxCardHeight = baseTargetHeight;
+  for (const card of resultCards) {
+    const naturalHeight = card.offsetHeight || card.scrollHeight;
+    if (naturalHeight > maxCardHeight) {
+      maxCardHeight = naturalHeight;
+    }
+  }
+
+  document.body.removeChild(measureHost);
+
+  // 将所有卡片的高度严格设定为同一高度，并调整 flex 撑开与 footer 沉底
+  for (const card of resultCards) {
+    formatPagedCard(card, maxCardHeight);
   }
 
   return resultCards;
