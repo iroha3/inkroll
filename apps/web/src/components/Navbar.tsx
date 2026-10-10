@@ -38,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-bold text-sm tracking-tight text-neutral-900">墨卷 Inkroll</h1>
+            <h1 className="font-bold text-sm tracking-tight text-neutral-900">墨卷 InkRoll</h1>
             <span className="text-[10px] bg-neutral-100 border border-neutral-200/80 text-neutral-600 px-1.5 py-0.5 rounded-full font-mono font-medium">
               v1.0
             </span>

@@ -157,6 +157,8 @@ export default function App() {
       setConfig((prev) => ({
         ...prev,
         ...preset.config,
+        // 保持用户当前的落款水印稳定，避免被模板预设意外冲掉
+        watermarkText: prev.watermarkText || 'By InkRoll',
       }));
       setActivePresetId(presetId);
     }

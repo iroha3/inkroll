@@ -149,7 +149,7 @@ export const TEMPLATE_PRESETS: TemplatePreset[] = [
       padding: 'normal',
       theme: 'classic-white',
       showWatermark: true,
-      watermarkText: 'BY Me',
+      watermarkText: 'By InkRoll',
     },
   },
   {
@@ -203,7 +203,7 @@ const [error, submitAction, isPending] = useActionState(
       padding: 'spacious',
       theme: 'classic-white',
       showWatermark: true,
-      watermarkText: 'Tech Insight',
+      watermarkText: 'By InkRoll',
     },
   },
   {
