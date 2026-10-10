@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+bun.lock
+bun.lockb
+package-lock.json
+
+# Build outputs
+dist/
+dist-*/
+*.user.js.bak
+
+# Temp / IDE
+.DS_Store
+*.local
+.env
+.idea/
+.vscode/
+*.log

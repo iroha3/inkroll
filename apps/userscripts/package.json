@@ -1,0 +1,12 @@
+{
+  "name": "inkroll-userscripts",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts"
+  },
+  "dependencies": {
+    "@inkroll/core": "workspace:*"
+  }
+}

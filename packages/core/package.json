@@ -1,0 +1,30 @@
+{
+  "name": "@inkroll/core",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles": "./src/styles/inkroll.css",
+    "./katex-embedded": "./src/styles/katex-embedded.css",
+    "./iife": "./dist/inkroll-core.iife.js"
+  },
+  "scripts": {
+    "build": "bun run build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "katex": "^0.18.4",
+    "markdown-it": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.7",
+    "@types/markdown-it": "^14.1.2",
+    "typescript": "~5.8.2"
+  }
+}

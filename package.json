@@ -1,0 +1,22 @@
+{
+  "name": "inkroll-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "bun --filter inkroll-web dev",
+    "build:web": "bun --filter inkroll-web build",
+    "dev:lite": "bun --filter inkroll-lite dev",
+    "build:lite": "bun --filter inkroll-lite build",
+    "build:core": "bun --filter @inkroll/core build",
+    "build:userscripts": "bun --filter inkroll-userscripts build",
+    "build:all": "bun run build:core && bun run build:lite && bun run build:web && bun run build:userscripts"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2"
+  }
+}
