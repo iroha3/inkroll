@@ -212,20 +212,23 @@ export async function buildCardPages(
   const baseTargetHeight = Math.max(680, Math.round(cfg.cardWidth * 1.4));
 
   // 统一卡片为 flex 容器，使得正文与页脚自适应且高度稳定一致
-  const formatPagedCard = (card: HTMLElement, height: number) => {
+  const formatPagedCard = (card: HTMLElement, height?: number) => {
     card.style.display = 'flex';
     card.style.flexDirection = 'column';
     card.style.boxSizing = 'border-box';
-    card.style.height = `${height}px`;
-    card.style.minHeight = `${height}px`;
-
-    const body = card.querySelector('.md-body') as HTMLElement | null;
-    if (body) {
-      body.style.flex = '1';
-      body.style.display = 'flex';
-      body.style.flexDirection = 'column';
+    card.style.width = `${cfg.cardWidth}px`;
+    if (height && height > 0) {
+      card.style.height = `${height}px`;
+      card.style.minHeight = `${height}px`;
     }
 
+    // 正文必须保持标准块级文档流，绝不使用 flex 破坏内部段落/分点的外边距折叠
+    const body = card.querySelector('.md-body') as HTMLElement | null;
+    if (body) {
+      body.style.display = 'block';
+    }
+
+    // 页脚沉底：在 flex 容器中，margin-top: auto 自动吃掉上方多余空间，精准沉在底部内边距线上
     const footer = card.querySelector('.card-footer') as HTMLElement | null;
     if (footer) {
       footer.style.marginTop = 'auto';
@@ -354,6 +357,16 @@ export async function buildCardPages(
     pageGroups.push(currentGroup);
   }
 
+  // 清理各切片页首尾无意义的孤悬水平分割线（避免出现在卡片最底部或最顶部与 footer/header 产生视觉冲突）
+  for (const group of pageGroups) {
+    while (group.length > 0 && group[group.length - 1].tagName.toLowerCase() === 'hr') {
+      group.pop();
+    }
+    while (group.length > 0 && group[0].tagName.toLowerCase() === 'hr') {
+      group.shift();
+    }
+  }
+
   // 若由于块过大等原因实际未分出多组，直接返回单张
   if (pageGroups.length <= 1) {
     const singleHeight = Math.max(baseTargetHeight, totalContentHeight + padH + footerH + titleH);
@@ -383,19 +396,21 @@ export async function buildCardPages(
     }
     card.appendChild(body);
 
-    // 页脚增加多图页码与落款：例如 "1 / 2 · By InkRoll"
+    // 页脚增加多图页码与落款：例如 "1 / 3 · By InkRoll"
     if (cfg.showWatermark && cfg.watermarkText) {
       const pageWatermark = `${i + 1} / ${totalPages} · ${cfg.watermarkText}`;
       card.appendChild(createFooter(pageWatermark, cfg.watermarkPosition));
     }
 
+    // 预先应用标准排版结构（暂不锁定高度）
+    formatPagedCard(card);
     resultCards.push(card);
   }
 
-  // 5. 测量所有组装后卡片的实际自然高度，提取最大高度统一拉齐
+  // 5. 挂载到离屏容器，测量每一张卡片在真实 flex 布局下的自然渲染外边框高度
   const measureHost = document.createElement('div');
   measureHost.style.cssText =
-    'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;';
+    `position:fixed;left:-99999px;top:0;width:${cfg.cardWidth}px;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;`;
   for (const card of resultCards) {
     measureHost.appendChild(card);
   }
@@ -403,7 +418,8 @@ export async function buildCardPages(
 
   let maxCardHeight = baseTargetHeight;
   for (const card of resultCards) {
-    const naturalHeight = card.offsetHeight || card.scrollHeight;
+    const rect = card.getBoundingClientRect();
+    const naturalHeight = Math.ceil(rect.height || card.offsetHeight);
     if (naturalHeight > maxCardHeight) {
       maxCardHeight = naturalHeight;
     }
@@ -411,7 +427,7 @@ export async function buildCardPages(
 
   document.body.removeChild(measureHost);
 
-  // 严格统一所有卡片高度，并利用 flex 保证各卡片 footer 齐平沉底，且无突兀留白
+  // 严格统一所有卡片高度，此时 maxCardHeight >= 每张卡片的自然高度，footer 100% 齐平沉底到同一水平线
   for (const card of resultCards) {
     formatPagedCard(card, maxCardHeight);
   }
