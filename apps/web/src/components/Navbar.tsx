@@ -2,20 +2,16 @@ import React from 'react';
 import {
   FileText,
   Download,
-  Copy,
   Sliders,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Check,
   Columns,
   Eye,
 } from 'lucide-react';
 
 interface NavbarProps {
   onExportClick: () => void;
-  onCopyClick: () => void;
-  copiedSuccess: boolean;
   viewMode: 'split' | 'preview-only' | 'editor-only';
   setViewMode: (mode: 'split' | 'preview-only' | 'editor-only') => void;
   zoomLevel: number;
@@ -26,8 +22,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   onExportClick,
-  onCopyClick,
-  copiedSuccess,
   viewMode,
   setViewMode,
   zoomLevel,
@@ -45,8 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-bold text-sm tracking-tight text-neutral-900">墨卷 Inkroll</h1>
-            <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded font-mono font-medium">
-              卷卷
+            <span className="text-[10px] bg-neutral-100 border border-neutral-200/80 text-neutral-600 px-1.5 py-0.5 rounded-full font-mono font-medium">
+              v1.0
             </span>
           </div>
           <p className="text-[11px] text-neutral-400 hidden sm:block">墨下生花，一卷成图</p>
@@ -125,25 +119,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Sliders className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">外观参数</span>
-        </button>
-
-        {/* Quick Copy Image */}
-        <button
-          onClick={onCopyClick}
-          className="hidden lg:flex items-center gap-1.5 text-xs font-medium bg-neutral-100 hover:bg-neutral-200 text-neutral-800 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-          title="快速复制长图到剪贴板"
-        >
-          {copiedSuccess ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-green-600" />
-              <span>已复制图片</span>
-            </>
-          ) : (
-            <>
-              <Copy className="w-3.5 h-3.5" />
-              <span>复制长图</span>
-            </>
-          )}
         </button>
 
         {/* Main Export Long Image Button */}

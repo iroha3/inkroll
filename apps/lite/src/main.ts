@@ -5,7 +5,8 @@ import { InkrollCore, THEMES, type ThemeStyle, type InkrollOptions } from '@inkr
 const THEME_NAMES: Record<ThemeStyle, string> = {
   'classic-white': '经典纯白 (Classic White)',
   'warm-paper': '暖调纸张 (Warm Paper)',
-  'forest-paper': '墨绿纸张 (Forest Paper)',
+  'forest-paper': '松墨黛绿 (Forest Paper)',
+  'kami-paper': 'Kami 和纸 (Kami Paper)',
   'soft-blue': '柔蓝印记 (Soft Blue)',
   'lavender': '淡雅薰衣草 (Lavender)',
   'minimal-dark': '极简暗黑 (Minimal Dark)',

@@ -2,6 +2,7 @@ export type ThemeStyle =
   | 'classic-white'
   | 'warm-paper'
   | 'forest-paper'
+  | 'kami-paper'
   | 'soft-blue'
   | 'lavender'
   | 'minimal-dark'

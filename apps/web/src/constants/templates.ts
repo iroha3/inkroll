@@ -231,9 +231,9 @@ const [error, submitAction, isPending] = useActionState(
       showRoleBadges: false,
       cardWidth: 460,
       padding: 'spacious',
-      theme: 'warm-paper',
+      theme: 'kami-paper',
       showWatermark: true,
-      watermarkText: 'Thought Notes',
+      watermarkText: 'By InkRoll',
     },
   },
   {

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { CardConfig } from '../types';
 import { InkrollCore } from '@inkroll/core';
-import { useLenis } from '../hooks/useLenis';
 import mermaid from 'mermaid';
 
 interface CardPreviewProps {
@@ -18,8 +17,6 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   zoomLevel,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  useLenis(scrollRef);
-
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

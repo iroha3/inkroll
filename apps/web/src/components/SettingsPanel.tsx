@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { Sliders, Type, Layout, Palette, Stamp, Monitor } from 'lucide-react';
 import { CardConfig, ThemeStyle, FontStyle } from '../types';
-import { useLenis } from '../hooks/useLenis';
 
 interface SettingsPanelProps {
   config: CardConfig;
@@ -17,9 +16,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
     });
   };
 
-  // Smooth scrolling for the settings drawer
   const panelRef = useRef<HTMLDivElement>(null);
-  useLenis(panelRef, { lerp: 0.1 });
 
   return (
     <div ref={panelRef} className="h-full overflow-y-auto overscroll-contain">
@@ -163,10 +160,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
             {[
               { id: 'classic-white', name: '经典纯白', bg: 'bg-white border-neutral-200' },
               { id: 'warm-paper', name: '暖调纸张', bg: 'bg-[#fcfaf6] border-[#e7e3d8]' },
-              { id: 'forest-paper', name: '墨绿纸张', bg: 'bg-[#f5efe0] border-[#e2d9c4] text-[#1e3d33]' },
+              { id: 'kami-paper', name: 'Kami 和纸', bg: 'bg-[#f5f4ed] border-[#e8e6dc] text-[#141413]' },
+              { id: 'forest-paper', name: '松墨黛绿', bg: 'bg-[#f4f0e6] border-[#e0dbd1] text-[#1b382b]' },
               { id: 'soft-blue', name: '柔蓝印记', bg: 'bg-[#f8fafc] border-blue-200' },
+              { id: 'lavender', name: '淡雅薰衣草', bg: 'bg-[#faf5ff] border-purple-200 text-[#2e1065]' },
               { id: 'minimal-dark', name: '极简暗黑', bg: 'bg-[#0d1117] text-white border-neutral-700' },
-              { id: 'emerald-dark', name: '墨绿暗夜', bg: 'bg-[#0e1713] text-[#d8e6e0] border-[#26362f]' },
+              { id: 'emerald-dark', name: '翡翠深邃', bg: 'bg-[#0e1713] text-[#d8e6e0] border-[#26362f]' },
             ].map((t) => (
               <button
                 key={t.id}

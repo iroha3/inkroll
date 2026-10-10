@@ -32,7 +32,7 @@ const DEFAULT_CONFIG: CardConfig = {
   fontSize: 'base',
   lineHeight: 'relaxed',
   showWatermark: true,
-  watermarkText: 'BY Me',
+  watermarkText: 'By InkRoll',
   watermarkPosition: 'bottom-right',
   canvasBg: 'neutral-gray',
   exportScale: 3,
@@ -60,7 +60,6 @@ export default function App() {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [showSettings, setShowSettings] = useState<boolean>(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
-  const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
   // Which template preset is currently selected (persisted so the dropdown
   // stays in sync with restored content after a reload)
   const [activePresetId, setActivePresetId] = useState<string>(() => {
@@ -168,40 +167,11 @@ export default function App() {
     setConfig(DEFAULT_CONFIG);
   };
 
-  // Quick Copy Image
-  const handleQuickCopy = async () => {
-    if (!cardRef.current) return;
-    try {
-      const blob = (await renderElementToImageData(
-        cardRef.current,
-        { scale: 3, format: 'png' },
-        true
-      )) as Blob;
-
-      if (blob && navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            [blob.type]: blob,
-          }),
-        ]);
-        setCopiedSuccess(true);
-        setTimeout(() => setCopiedSuccess(false), 2500);
-      } else {
-        setIsExportModalOpen(true);
-      }
-    } catch (err) {
-      console.error('Copy failed:', err);
-      setIsExportModalOpen(true);
-    }
-  };
-
   return (
     <div className="w-screen h-screen flex flex-col bg-neutral-100 overflow-hidden font-sans">
       {/* Top Navbar */}
       <Navbar
         onExportClick={() => setIsExportModalOpen(true)}
-        onCopyClick={handleQuickCopy}
-        copiedSuccess={copiedSuccess}
         viewMode={viewMode}
         setViewMode={setViewMode}
         zoomLevel={zoomLevel}

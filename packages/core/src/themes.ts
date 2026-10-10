@@ -14,10 +14,16 @@ export const THEMES: Record<ThemeStyle, ThemeColors> = {
     shadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
   },
   'forest-paper': {
-    bg: '#f5efe0',
-    text: '#1e3d33',
-    border: '#e2d9c4',
+    bg: '#f4f0e6',
+    text: '#1b382b',
+    border: '#e0dbd1',
     shadow: '0 1px 3px 0 rgb(214 203 176 / 0.5), 0 1px 2px -1px rgb(214 203 176 / 0.5)',
+  },
+  'kami-paper': {
+    bg: '#f5f4ed',
+    text: '#141413',
+    border: '#e8e6dc',
+    shadow: '0 1px 3px 0 rgba(20, 20, 19, 0.06), 0 1px 2px -1px rgba(20, 20, 19, 0.06)',
   },
   'soft-blue': {
     bg: '#f8fafc',
@@ -60,17 +66,31 @@ export const LIGHT_VARS: ThemeVars = {
 };
 
 export const FOREST_VARS: ThemeVars = {
-  '--md-border': '#e2d9c4',
-  '--md-code-bg': '#ece5d2',
-  '--md-code-border': '#e2d9c4',
-  '--md-code-head-bg': '#e3dbc5',
-  '--md-code-head-text': '#6b7a6e',
-  '--md-quote-bg': '#efe8d6',
-  '--md-table-head-bg': '#e7dfc9',
-  '--md-muted': '#8d8875',
-  '--md-check-border': '#b5ad93',
-  '--md-link': '#2d8a6e',
-  '--md-link-hover': '#1f6b54',
+  '--md-border': '#e0dbd1',
+  '--md-code-bg': '#ebe4d3',
+  '--md-code-border': '#e0dbd1',
+  '--md-code-head-bg': '#e3dbca',
+  '--md-code-head-text': '#56665a',
+  '--md-quote-bg': '#ebe3d1',
+  '--md-table-head-bg': '#e6ded0',
+  '--md-muted': '#7b877a',
+  '--md-check-border': '#a8b5a7',
+  '--md-link': '#1b4d3e',
+  '--md-link-hover': '#13392e',
+};
+
+export const KAMI_VARS: ThemeVars = {
+  '--md-border': '#e8e6dc',
+  '--md-code-bg': '#f0eee6',
+  '--md-code-border': '#e8e6dc',
+  '--md-code-head-bg': '#eae7dc',
+  '--md-code-head-text': '#504e49',
+  '--md-quote-bg': '#faf9f5',
+  '--md-table-head-bg': '#eae7dc',
+  '--md-muted': '#6b6a64',
+  '--md-check-border': '#b8b5aa',
+  '--md-link': '#1b365d',
+  '--md-link-hover': '#2d5a8a',
 };
 
 export const DARK_VARS: ThemeVars = {
@@ -107,6 +127,7 @@ export const THEME_VARS: Record<ThemeStyle, ThemeVars> = {
   'soft-blue': LIGHT_VARS,
   'lavender': LIGHT_VARS,
   'forest-paper': FOREST_VARS,
+  'kami-paper': KAMI_VARS,
   'minimal-dark': DARK_VARS,
   'emerald-dark': EMERALD_VARS,
 };
@@ -122,7 +143,7 @@ export const DEFAULT_CONFIG: CardConfig = {
   showTitle: false,
   titleText: '',
   showWatermark: true,
-  watermarkText: 'BY Inkroll',
+  watermarkText: 'By InkRoll',
   watermarkPosition: 'bottom-right',
   exportScale: 3,
   exportFormat: 'png',
