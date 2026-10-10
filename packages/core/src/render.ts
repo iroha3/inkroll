@@ -258,18 +258,15 @@ export async function buildCardPages(
   host.appendChild(fullCard);
   document.body.appendChild(host);
 
-  // 计算每页的正文净高度预算
+  // 计算固定装饰层的高度（padding、title、footer）
   const paddingMap: Record<string, number> = { compact: 48, normal: 64, spacious: 80 };
   const padH = paddingMap[cfg.padding] || 64;
   const footerH = cfg.showWatermark ? 60 : 0;
   const titleH = cfg.showTitle && cfg.titleText ? 72 : 0;
 
-  const pageBudgetNormal = Math.max(460, baseTargetHeight - padH - footerH);
-  const pageBudgetFirst = Math.max(400, baseTargetHeight - padH - footerH - titleH);
-
-  const pageGroups: HTMLElement[][] = [];
-  let currentGroup: HTMLElement[] = [];
-  let currentHeight = 0;
+  // 1. 统计所有块元素的真实渲染高度与边距
+  const blockHeights: number[] = [];
+  let totalContentHeight = 0;
 
   for (const child of children) {
     const rect = child.getBoundingClientRect();
@@ -277,30 +274,90 @@ export async function buildCardPages(
     const computed = window.getComputedStyle(child);
     const mt = parseFloat(computed.marginTop) || 0;
     const mb = parseFloat(computed.marginBottom) || 0;
-    const blockTotalH = h + mt + mb;
+    const blockTotalH = Math.ceil(h + mt + mb);
+    blockHeights.push(blockTotalH);
+    totalContentHeight += blockTotalH;
+  }
 
-    const currentBudget = pageGroups.length === 0 ? pageBudgetFirst : pageBudgetNormal;
+  document.body.removeChild(host);
 
-    // 当加上当前块会超过单页正文高度预算，且当前页已有至少一个块时，进行块完整边界安全断页
-    if (currentGroup.length > 0 && currentHeight + blockTotalH > currentBudget) {
-      pageGroups.push(currentGroup);
-      currentGroup = [child];
-      currentHeight = blockTotalH;
-    } else {
+  // 2. 评估单张卡片舒适容量与最佳目标页数
+  // 社交媒体（小红书/微博）舒适单张卡片总高区间：700px ~ 960px（高宽比约 1:1.4 ~ 1:1.9）
+  const idealBodyCapacity = Math.max(500, Math.round(cfg.cardWidth * 1.5));
+  const maxComfortBodyCapacity = Math.max(650, Math.round(cfg.cardWidth * 1.85));
+  const maxComfortTotalCardH = maxComfortBodyCapacity + padH + footerH + titleH;
+
+  // 若整篇内容即使作为单张卡片依然在舒适阅读高度范围内，则无需切碎，直接保持单张
+  if (totalContentHeight + padH + footerH + titleH <= maxComfortTotalCardH) {
+    const naturalH = totalContentHeight + padH + footerH + titleH;
+    const singleHeight = Math.max(Math.round(cfg.cardWidth * 1.35), naturalH);
+    formatPagedCard(fullCard, singleHeight);
+    return [fullCard];
+  }
+
+  // 3. 计算最优页数：优先保证每一页内容饱满紧凑，绝不盲目多切导致大片留白
+  let targetPages = Math.max(2, Math.ceil((totalContentHeight + titleH) / idealBodyCapacity));
+  while (targetPages > 2 && (totalContentHeight + titleH) / (targetPages - 1) <= maxComfortBodyCapacity) {
+    targetPages--;
+  }
+
+  // 4. 全局均衡断页算法（Balanced Partitioning）：
+  // 计算每页的平均期望正文容量，在块完整边界处找到最接近均摊期望的断点
+  const pageGroups: HTMLElement[][] = [];
+  let currentGroup: HTMLElement[] = [];
+  let currentHeight = 0;
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
+    const blockH = blockHeights[i];
+    const remainingPages = targetPages - pageGroups.length;
+
+    // 若已到达最后一页，将剩余所有块全部归入当前页
+    if (remainingPages <= 1) {
       currentGroup.push(child);
-      currentHeight += blockTotalH;
+      currentHeight += blockH;
+      continue;
     }
+
+    // 首页扣除大标题高度份额，后续页均摊剩余正文
+    const currentTarget =
+      pageGroups.length === 0
+        ? Math.max(380, (totalContentHeight - titleH) / targetPages)
+        : totalContentHeight / targetPages;
+
+    const withoutH = currentHeight;
+    const withH = currentHeight + blockH;
+
+    // 当当前页已有内容，且加上当前块已经超出目标容量
+    if (currentGroup.length > 0 && withH > currentTarget) {
+      const diffWithout = Math.abs(withoutH - currentTarget);
+      const diffWith = Math.abs(withH - currentTarget);
+      const remainingBlocks = children.length - i;
+
+      // 只要后面剩余的块足够剩下的每页至少分到 1 个块
+      if (remainingBlocks >= remainingPages) {
+        // 如果不加当前块更接近均摊目标，或者加上后严重超标，则在当前块前断页
+        if (diffWithout <= diffWith || withH > currentTarget * 1.25) {
+          pageGroups.push(currentGroup);
+          currentGroup = [child];
+          currentHeight = blockH;
+          continue;
+        }
+      }
+    }
+
+    currentGroup.push(child);
+    currentHeight += blockH;
   }
 
   if (currentGroup.length > 0) {
     pageGroups.push(currentGroup);
   }
 
-  document.body.removeChild(host);
-
-  // 若总高度并未超过单张预算且只分了 1 组，直接返回原卡片并应用统一高度
+  // 若由于块过大等原因实际未分出多组，直接返回单张
   if (pageGroups.length <= 1) {
-    formatPagedCard(fullCard, baseTargetHeight);
+    const singleHeight = Math.max(baseTargetHeight, totalContentHeight + padH + footerH + titleH);
+    formatPagedCard(fullCard, singleHeight);
     return [fullCard];
   }
 
@@ -326,7 +383,7 @@ export async function buildCardPages(
     }
     card.appendChild(body);
 
-    // 页脚增加多图页码与落款：例如 "1 / 3 · By InkRoll"
+    // 页脚增加多图页码与落款：例如 "1 / 2 · By InkRoll"
     if (cfg.showWatermark && cfg.watermarkText) {
       const pageWatermark = `${i + 1} / ${totalPages} · ${cfg.watermarkText}`;
       card.appendChild(createFooter(pageWatermark, cfg.watermarkPosition));
@@ -335,7 +392,7 @@ export async function buildCardPages(
     resultCards.push(card);
   }
 
-  // 离屏测量所有组装后卡片的实际自然高度，寻找最大高度（至少为 baseTargetHeight）
+  // 5. 测量所有组装后卡片的实际自然高度，提取最大高度统一拉齐
   const measureHost = document.createElement('div');
   measureHost.style.cssText =
     'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;';
@@ -354,7 +411,7 @@ export async function buildCardPages(
 
   document.body.removeChild(measureHost);
 
-  // 将所有卡片的高度严格设定为同一高度，并调整 flex 撑开与 footer 沉底
+  // 严格统一所有卡片高度，并利用 flex 保证各卡片 footer 齐平沉底，且无突兀留白
   for (const card of resultCards) {
     formatPagedCard(card, maxCardHeight);
   }
