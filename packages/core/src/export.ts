@@ -60,7 +60,7 @@ export async function exportElement(
     }
   }
 
-  // 收集样式表
+  // 收集样式表（包含内联的 katex-embedded 字体与排版样式）
   let cssText = '';
   for (let s = 0; s < document.styleSheets.length; s++) {
     try {

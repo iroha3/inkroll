@@ -22,12 +22,11 @@ if (!esmResult.success) {
 
 console.log('Building @inkroll/core (IIFE standalone for userscripts)...');
 const iifeResult = await Bun.build({
-  entrypoints: [resolve(ROOT, 'src/index.ts')],
+  entrypoints: [resolve(ROOT, 'src/index.iife.ts')],
   outdir: DIST,
   target: 'browser',
   format: 'iife',
   naming: 'inkroll-core.iife.js',
-  external: ['katex', 'markdown-it'],
 });
 
 if (!iifeResult.success) {

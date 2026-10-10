@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "@inkroll/core/styles";
-@import "katex/dist/katex.min.css";
+@import "@inkroll/core/katex-embedded";
 
 /* Smooth-scroll foundation */
 body {

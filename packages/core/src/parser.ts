@@ -1,4 +1,4 @@
-import MarkdownIt from 'markdown-it';
+import { getMarkdownIt } from './deps';
 
 export interface MathBlock {
   raw: string;
@@ -89,8 +89,12 @@ function splitInlineChildren(children: any[]) {
   return groups.filter((g) => g.length > 0);
 }
 
-export function createMarkdownParser(): MarkdownIt {
-  const mdFactory = (typeof MarkdownIt === 'function' ? MarkdownIt : (window as any).markdownit) as typeof MarkdownIt;
+export function createMarkdownParser(): any {
+  const mdFactory = getMarkdownIt();
+  if (!mdFactory) {
+    throw new Error('InkrollCore: 未找到 markdown-it 实例，请确保已加载 markdown-it');
+  }
+
   const md = mdFactory({
     html: true,
     linkify: false,
@@ -167,13 +171,13 @@ export function createMarkdownParser(): MarkdownIt {
 
     // 如果是 mermaid 代码块，做标记方便后续后处理
     if (lang === 'mermaid') {
-      return `<div class="md-mermaid-block" data-mermaid-code="${encodeURIComponent(token.content)}">` +
-        `<pre class="mermaid">${content}</pre></div>`;
+      return (
+        `<div class="md-mermaid-block" data-mermaid-code="${encodeURIComponent(token.content)}">` +
+        `<pre class="mermaid">${content}</pre></div>`
+      );
     }
 
-    const head = lang
-      ? `<div class="md-code-head">${md.utils.escapeHtml(lang)}</div>`
-      : '';
+    const head = lang ? `<div class="md-code-head">${md.utils.escapeHtml(lang)}</div>` : '';
     return (
       `<div class="md-code-block">${head}` +
       `<pre><code class="language-${md.utils.escapeHtml(lang)}">${content}</code></pre></div>`
@@ -192,7 +196,7 @@ export function createMarkdownParser(): MarkdownIt {
   return md;
 }
 
-export function parseMarkdown(source: string, md: MarkdownIt): ParseResult {
+export function parseMarkdown(source: string, md: any): ParseResult {
   const { text: cleanText, defs } = extractFootnotes(source);
   const { text: preprocessed, mathBlocks } = preprocessMarkdown(cleanText);
 

@@ -1,7 +1,20 @@
+import MarkdownIt from 'markdown-it';
+import katex from 'katex';
 import { buildCard } from './render';
 import { exportElement, renderToImage, downloadCardImage, downloadDataUrl } from './export';
-import { normalizeConfig, DEFAULT_CONFIG, THEMES, THEME_VARS } from './themes';
 import type { InkrollAPI, InkrollOptions, CoreExtensions } from './types';
+
+// ESM 环境下自动补齐全局注入，确保无缝兼容
+if (typeof window !== 'undefined') {
+  const w = window as any;
+  if (!w.markdownit) w.markdownit = MarkdownIt;
+  if (!w.katex) w.katex = katex;
+}
+if (typeof globalThis !== 'undefined') {
+  const g = globalThis as any;
+  if (!g.markdownit) g.markdownit = MarkdownIt;
+  if (!g.katex) g.katex = katex;
+}
 
 export * from './types';
 export * from './themes';
@@ -26,7 +39,6 @@ export function createInkrollCore(): InkrollAPI {
 
 export const InkrollCore: InkrollAPI = createInkrollCore();
 
-// 挂载到全局，供油猴或原生浏览器环境直接调用
 if (typeof window !== 'undefined') {
   const win = window as any;
   win.InkrollCore = InkrollCore;

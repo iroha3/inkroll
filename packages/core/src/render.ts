@@ -1,10 +1,10 @@
-import katex from 'katex';
+import { getKatex } from './deps';
 import { createMarkdownParser, parseMarkdown, type MathBlock } from './parser';
 import { normalizeConfig, THEMES, THEME_VARS } from './themes';
 import type { CoreExtensions, InkrollOptions } from './types';
 
 function renderMathString(raw: string, display: boolean): string {
-  const katexLib = typeof katex !== 'undefined' ? katex : (window as any).katex;
+  const katexLib = getKatex();
   if (!katexLib || !katexLib.renderToString) return raw;
 
   let tex = raw;
@@ -99,7 +99,13 @@ export async function processMermaid(root: HTMLElement, extensions?: CoreExtensi
   }
 }
 
-const sharedMd = createMarkdownParser();
+let sharedMdInstance: any = null;
+function getSharedMd() {
+  if (!sharedMdInstance) {
+    sharedMdInstance = createMarkdownParser();
+  }
+  return sharedMdInstance;
+}
 
 export function buildCard(
   markdown: string,
@@ -141,7 +147,7 @@ export function buildCard(
     body.style.fontSize = `${cfg.fontSize}px`;
   }
 
-  const { html, mathBlocks } = parseMarkdown(markdown, sharedMd);
+  const { html, mathBlocks } = parseMarkdown(markdown, getSharedMd());
   body.innerHTML = html;
 
   processMath(body, mathBlocks);
