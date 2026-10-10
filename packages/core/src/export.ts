@@ -1,4 +1,5 @@
 import { buildCard, processMermaid } from './render';
+import { CORE_EMBEDDED_CSS } from './styles/embedded-css';
 import { normalizeConfig } from './themes';
 import type { CoreExtensions, InkrollOptions } from './types';
 
@@ -9,25 +10,6 @@ function blobToDataURL(blob: Blob): Promise<string> {
     reader.onerror = () => reject(new Error('读取图片失败'));
     reader.readAsDataURL(blob);
   });
-}
-
-function inlineComputedStyles(srcEl: Node, dstEl: Node): void {
-  if (dstEl.nodeType === 1 && srcEl.nodeType === 1) {
-    const src = srcEl as Element;
-    const dst = dstEl as HTMLElement;
-    const cs = window.getComputedStyle(src);
-    for (let i = 0; i < cs.length; i++) {
-      const p = cs[i];
-      dst.style.setProperty(p, cs.getPropertyValue(p), cs.getPropertyPriority(p));
-    }
-  }
-  let src = srcEl.firstChild;
-  let dst = dstEl.firstChild;
-  while (src && dst) {
-    inlineComputedStyles(src, dst);
-    src = src.nextSibling;
-    dst = dst.nextSibling;
-  }
 }
 
 export async function exportElement(
@@ -44,8 +26,8 @@ export async function exportElement(
   }
   await new Promise((r) => setTimeout(r, 50));
 
+  // 克隆卡片 DOM（保留所有内联主题变量与尺寸设置）
   const clone = element.cloneNode(true) as HTMLElement;
-  inlineComputedStyles(element, clone);
 
   // 兜底：隐藏非展开态的 <details> 子内容，防止部分浏览器在 foreignObject 内误展示
   const closedDetails = clone.querySelectorAll('details');
@@ -60,17 +42,13 @@ export async function exportElement(
     }
   }
 
-  // 收集样式表（包含内联的 katex-embedded 字体与排版样式）
-  let cssText = '';
-  for (let s = 0; s < document.styleSheets.length; s++) {
-    try {
-      const rules = document.styleSheets[s].cssRules;
-      for (let r = 0; r < rules.length; r++) {
-        cssText += rules[r].cssText + '\n';
-      }
-    } catch {
-      // 跨域样式表忽略
-    }
+  // 纯净核心样式表：直接使用内置排版与 KaTeX base64 字体，完全阻断宿主网站全局 CSS 污染
+  let cssText = CORE_EMBEDDED_CSS || '';
+
+  // 若页面注入了特定自定义 inkroll 样式表，安全补充（不遍历全量第三方宿主样式表）
+  const customStyleEl = document.getElementById('inkroll-custom-style');
+  if (customStyleEl && customStyleEl.textContent) {
+    cssText += '\n' + customStyleEl.textContent;
   }
 
   // XML 特殊字符转义（防止样式内 &skey 等导致 XMLSerializer 失败）
@@ -142,7 +120,8 @@ function getOffscreenHost(): HTMLElement {
     offscreenHost = document.createElement('div');
     offscreenHost.setAttribute('data-inkroll-host', '');
     offscreenHost.style.cssText =
-      'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;';
+      'position:fixed;left:-99999px;top:0;width:0;height:0;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;' +
+      'font-size:15px;line-height:1.7;letter-spacing:normal;text-align:left;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
     document.body.appendChild(offscreenHost);
   }
   return offscreenHost;
