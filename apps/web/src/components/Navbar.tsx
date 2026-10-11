@@ -12,7 +12,6 @@ import {
   Square,
   Tv,
   Smartphone,
-  Share2,
 } from 'lucide-react';
 import { RenderMode, ScenePreset } from '../types';
 
@@ -101,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="小红书 3:4 黄金图文规格 (1242×1660)"
+            title="小红书 / 微博 3:4 黄金图文规格 (1242×1660)"
           >
             <Layers className="w-3.5 h-3.5" />
             <span>小红书</span>
@@ -123,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="朋友圈 / 社交媒体 1:1 方形画幅 (1242×1242)"
+            title="朋友圈 / 微博九宫格 / 社交媒体 1:1 方形画幅 (1242×1242)"
           >
             <Square className="w-3.5 h-3.5" />
             <span>朋友圈</span>
@@ -134,29 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* 场景 3：微博 (3:4 · 1242×1660) */}
-          <button
-            onClick={() => {
-              setRenderMode('paged');
-              onSelectScene('weibo');
-            }}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-              renderMode === 'paged' && scene === 'weibo'
-                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
-                : 'text-neutral-600 hover:text-black'
-            }`}
-            title="微博 3:4 移动端黄金图文规格 (1242×1660)"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span>微博</span>
-            {renderMode === 'paged' && scene === 'weibo' && pageCount > 1 && (
-              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
-                {pageCount}P
-              </span>
-            )}
-          </button>
-
-          {/* 场景 4：幻灯片 / X / Bluesky (16:9 · 1920×1080) */}
+          {/* 场景 3：幻灯片 / X / Bluesky (16:9 · 1920×1080) */}
           <button
             onClick={() => {
               setRenderMode('paged');
@@ -189,7 +166,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="快手 / 故事 / 竖屏海报 9:16 (1080×1920)"
+            title="竖屏海报 / 故事 / 手机满屏 9:16 (1080×1920)"
           >
             <Smartphone className="w-3.5 h-3.5" />
             <span>海报</span>
