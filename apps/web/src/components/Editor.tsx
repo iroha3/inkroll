@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import {
   Bold,
   Italic,
@@ -36,31 +36,29 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;');
 }
 
-// 轻量级方案 A：零依赖高性能 Markdown 语法高亮染色器
+// 零依赖高性能 Markdown 语法高亮染色器（严格保持 font-weight: 400 与零水平 padding/margin，确保字符度量与 Textarea 100% 绝对一致，彻底杜绝光标重叠与错位）
 function highlightMarkdown(text: string): string {
   const lines = text.split('\n');
   const highlightedLines = lines.map((line) => {
     const escaped = escapeHtml(line);
 
-    // H1
-    if (/^#\s+/.test(line)) {
-      return `<span class="text-neutral-900 font-bold">${escaped}</span>`;
-    }
-    // H2
-    if (/^##\s+/.test(line)) {
-      return `<span class="text-neutral-900 font-bold">${escaped}</span>`;
-    }
-    // H3-H6
-    if (/^#{3,6}\s+/.test(line)) {
-      return `<span class="text-neutral-800 font-semibold">${escaped}</span>`;
+    // 标题：不改变字体粗细，通过色调与标记淡化区分
+    if (/^#+\s+/.test(line)) {
+      const match = line.match(/^(#+)(\s+)(.*)$/);
+      if (match) {
+        return `<span class="text-neutral-400 font-normal">${escapeHtml(match[1])}</span><span class="text-neutral-400 font-normal">${escapeHtml(match[2])}</span><span class="text-neutral-900 font-normal">${escapeHtml(match[3])}</span>`;
+      }
     }
     // 引用块 >
     if (/^>\s*/.test(line)) {
-      return `<span class="text-emerald-700 italic">${escaped}</span>`;
+      const match = line.match(/^(>\s*)(.*)$/);
+      if (match) {
+        return `<span class="text-emerald-500 font-normal">${escapeHtml(match[1])}</span><span class="text-emerald-700 font-normal">${escapeHtml(match[2])}</span>`;
+      }
     }
     // 分割线 ---
     if (/^---$|^===$/.test(line.trim())) {
-      return `<span class="text-neutral-400 font-bold">${escaped}</span>`;
+      return `<span class="text-neutral-400 font-normal">${escaped}</span>`;
     }
 
     let formatted = escaped;
@@ -69,34 +67,38 @@ function highlightMarkdown(text: string): string {
     if (/^(\s*[-*+]|\s*\d+\.)\s+/.test(line)) {
       formatted = formatted.replace(
         /^(\s*[-*+]|\s*\d+\.)(\s+)/,
-        '<span class="text-neutral-400 font-semibold">$1</span>$2'
+        '<span class="text-neutral-400 font-normal">$1</span>$2'
       );
     }
 
-    // 行内代码 `code`
+    // 行内代码 `code` (纯色调与浅底色，零水平 padding/margin，确保字符宽度零偏移)
     formatted = formatted.replace(
-      /(`[^`]+`)/g,
-      '<span class="text-rose-600 bg-neutral-100 px-1 rounded font-mono font-medium">$1</span>'
+      /(`)([^`]+)(`)/g,
+      '<span class="text-neutral-400 font-normal">$1</span><span class="text-rose-600 bg-rose-50/80 font-normal">$2</span><span class="text-neutral-400 font-normal">$3</span>'
     );
-    // 加粗 **text**
+
+    // 加粗 **text** (纯色调与标记淡化，严格保持 font-weight: 400，杜绝粗体膨胀导致光标错位重叠)
     formatted = formatted.replace(
-      /(\*\*[^*]+\*\*)/g,
-      '<span class="font-bold text-neutral-900">$1</span>'
+      /(\*\*)([^*]+)(\*\*)/g,
+      '<span class="text-neutral-400 font-normal">$1</span><span class="text-neutral-900 bg-neutral-100/70 font-normal">$2</span><span class="text-neutral-400 font-normal">$3</span>'
     );
+
     // 斜体 *text*
     formatted = formatted.replace(
       /(?<!\*)\*([^*]+)\*(?!\*)/g,
-      '<span class="italic text-neutral-700">*$1*</span>'
+      '<span class="text-neutral-400 font-normal">*</span><span class="text-neutral-700 font-normal">$1</span><span class="text-neutral-400 font-normal">*</span>'
     );
-    // 高亮 ==text==
+
+    // 高亮 ==text== (纯色调与浅底色，零水平 padding)
     formatted = formatted.replace(
-      /(==[^=]+==)/g,
-      '<span class="bg-amber-100 text-amber-900 px-0.5 rounded font-medium">$1</span>'
+      /(==)([^=]+)(==)/g,
+      '<span class="text-amber-500/70 font-normal">$1</span><span class="bg-amber-100 text-amber-900 font-normal">$2</span><span class="text-amber-500/70 font-normal">$3</span>'
     );
+
     // 链接 [text](url)
     formatted = formatted.replace(
-      /(\[[^\]]+\]\([^)]+\))/g,
-      '<span class="text-blue-600 underline">$1</span>'
+      /(\[[^\]]+\])(\([^)]+\))/g,
+      '<span class="text-blue-600 underline decoration-blue-300 font-normal">$1</span><span class="text-neutral-400 font-normal">$2</span>'
     );
 
     return formatted;
@@ -104,6 +106,20 @@ function highlightMarkdown(text: string): string {
 
   return highlightedLines.join('\n') + (text.endsWith('\n') ? ' ' : '');
 }
+
+const editorSharedStyle: React.CSSProperties = {
+  fontFamily:
+    'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", monospace',
+  fontSize: '15px',
+  lineHeight: '26px',
+  fontWeight: 400,
+  letterSpacing: '0px',
+  tabSize: 2,
+  boxSizing: 'border-box',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  overflowWrap: 'break-word',
+};
 
 export const Editor: React.FC<EditorProps> = ({
   content,
@@ -115,6 +131,7 @@ export const Editor: React.FC<EditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
+  const [enableHighlight, setEnableHighlight] = useState<boolean>(true);
 
   // 语法高亮缓存
   const highlightedHtml = useMemo(() => highlightMarkdown(content), [content]);
@@ -313,6 +330,18 @@ export const Editor: React.FC<EditorProps> = ({
           </button>
 
           <button
+            onClick={() => setEnableHighlight((prev) => !prev)}
+            className={`px-1.5 py-0.5 rounded text-[11px] transition-colors cursor-pointer flex items-center gap-1 ${
+              enableHighlight
+                ? 'bg-neutral-200/60 text-neutral-800 font-medium'
+                : 'text-neutral-400 hover:text-black hover:bg-neutral-200/60'
+            }`}
+            title={enableHighlight ? "语法高亮已开启（点击切换纯净原生文本）" : "纯净原生文本模式（点击开启语法高亮）"}
+          >
+            <span>高亮</span>
+          </button>
+
+          <button
             onClick={onResetDefault}
             className="px-1.5 py-0.5 hover:bg-neutral-200/60 rounded text-[11px] text-neutral-500 hover:text-black transition-colors cursor-pointer"
             title="恢复默认金句示例"
@@ -336,18 +365,22 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       </div>
 
-      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（字体放大至 15px，严格统一滚动槽与右侧留白） */}
+      {/* 语法高亮文本区（字体 15px，行高 26px，绝对零漂移） */}
       <div className="flex-1 relative overflow-hidden bg-white">
-        {/* 底层染色遮罩层：保持 overflow-y-scroll 使得排版折行宽度与顶层 Textarea 像素级 100% 对齐 */}
-        <pre
-          ref={highlightRef}
-          aria-hidden="true"
-          style={{ scrollbarColor: 'transparent transparent' }}
-          className="absolute inset-0 pl-4 pr-8 py-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-y-scroll overflow-x-hidden box-border"
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-        />
+        {enableHighlight && (
+          <pre
+            ref={highlightRef}
+            aria-hidden="true"
+            style={{
+              ...editorSharedStyle,
+              scrollbarColor: 'transparent transparent',
+            }}
+            className="absolute inset-0 pl-4 pr-8 py-4 m-0 border-0 pointer-events-none select-none text-neutral-800 overflow-y-scroll overflow-x-hidden"
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+        )}
 
-        {/* 顶层透明原生交互 Textarea（右侧 pr-8 保证文字与滚动条间至少保留 15px 呼吸间距，折行完全吻合） */}
+        {/* 原生交互 Textarea（开启高亮时文字透明保留光标；关闭高亮时原生显色） */}
         <textarea
           ref={textareaRef}
           value={content}
@@ -356,7 +389,12 @@ export const Editor: React.FC<EditorProps> = ({
           onKeyDown={handleTextareaKeyDown}
           placeholder="在此输入或粘贴 Markdown 内容..."
           spellCheck={false}
-          className="absolute inset-0 pl-4 pr-8 py-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-y-scroll overflow-x-hidden box-border select-text z-10"
+          style={editorSharedStyle}
+          className={`absolute inset-0 pl-4 pr-8 py-4 m-0 border-0 outline-none resize-none overflow-y-scroll overflow-x-hidden select-text z-10 ${
+            enableHighlight
+              ? 'bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent'
+              : 'bg-white text-neutral-900 caret-neutral-900 selection:bg-blue-100 selection:text-neutral-900'
+          }`}
         />
       </div>
     </div>

@@ -67,6 +67,15 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          {/* 本地字体提示 */}
+          <div className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100 text-[11px] leading-relaxed text-neutral-500 flex items-start gap-2">
+            <span className="text-neutral-400 shrink-0 select-none">💡</span>
+            <div>
+              <span className="text-neutral-800 font-medium">字体质感提示：</span>
+              若系统本地已安装<strong>「霞鹜文楷」</strong>或<strong>「思源宋体」</strong>，排版引擎将自动优先调用，导出更具印刷级温润质感的卡片。
+            </div>
+          </div>
+
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 pt-0.5">
             <Heart className="w-3 h-3 text-neutral-400 shrink-0" />
             <span>致敬 <a href="https://github.com/tw93/kami" target="_blank" rel="noreferrer" className="underline hover:text-black">tw93/Kami</a> 的纸质克制排版</span>
