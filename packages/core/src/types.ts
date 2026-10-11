@@ -45,7 +45,7 @@ export interface CardConfig {
   scene?: ScenePreset;
 }
 
-export type ScenePreset = 'xiaohongshu' | 'square' | 'slide' | 'story' | 'custom';
+export type ScenePreset = 'xiaohongshu' | 'square' | 'slide' | 'story' | 'weibo' | 'custom';
 
 export interface SceneSpec {
   id: ScenePreset;

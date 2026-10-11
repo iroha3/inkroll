@@ -12,6 +12,7 @@ import {
   Square,
   Tv,
   Smartphone,
+  Share2,
 } from 'lucide-react';
 import { RenderMode, ScenePreset } from '../types';
 
@@ -133,7 +134,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* 场景 3：幻灯片 / 知识图解 (16:9 · 1920×1080) */}
+          {/* 场景 3：微博 (3:4 · 1242×1660) */}
+          <button
+            onClick={() => {
+              setRenderMode('paged');
+              onSelectScene('weibo');
+            }}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'paged' && scene === 'weibo'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="微博 3:4 移动端黄金图文规格 (1242×1660)"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>微博</span>
+            {renderMode === 'paged' && scene === 'weibo' && pageCount > 1 && (
+              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
+                {pageCount}P
+              </span>
+            )}
+          </button>
+
+          {/* 场景 4：幻灯片 / X / Bluesky (16:9 · 1920×1080) */}
           <button
             onClick={() => {
               setRenderMode('paged');
@@ -144,7 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="公众号 / 知识图解 / 幻灯片 16:9 (1920×1080)"
+            title="X (Twitter) / Bluesky / 公众号 / 幻灯片 16:9 (1920×1080)"
           >
             <Tv className="w-3.5 h-3.5" />
             <span>幻灯片</span>

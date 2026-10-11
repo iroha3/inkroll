@@ -207,6 +207,17 @@ export const SCENE_SPECS: Record<ScenePreset, SceneSpec> = {
     exportHeight: 1660,
     description: '小红书 3:4 黄金图文规格 (1242×1660)',
   },
+  weibo: {
+    id: 'weibo',
+    name: '微博卡片',
+    shortName: '微博',
+    ratioLabel: '3:4',
+    width: 414,
+    height: 1660 / 3, // ~553.3333333333334
+    exportWidth: 1242,
+    exportHeight: 1660,
+    description: '微博 3:4 移动端黄金图文规格 (1242×1660)',
+  },
   square: {
     id: 'square',
     name: '朋友圈卡片',
@@ -227,7 +238,7 @@ export const SCENE_SPECS: Record<ScenePreset, SceneSpec> = {
     height: 360,
     exportWidth: 1920,
     exportHeight: 1080,
-    description: '公众号 / 知识图解 / 幻灯片 (1920×1080)',
+    description: 'X (Twitter) / Bluesky / 公众号 / 幻灯片 16:9 (1920×1080)',
   },
   story: {
     id: 'story',
@@ -366,7 +377,7 @@ export async function buildCardPages(
     }
   }
 
-  // 2. 临时挂载到离屏容器中精确度量实际像素高度
+  // 2. 挂载到离屏容器中，通过浏览器真实渲染树做 100% 精确度量（天然融合 CSS 外边距折叠与行高）
   const measureHost = document.createElement('div');
   measureHost.className = fullCard.className;
   measureHost.style.cssText =
@@ -375,43 +386,51 @@ export async function buildCardPages(
   measureHost.appendChild(measureBody);
   document.body.appendChild(measureHost);
 
-  const measureElement = (el: HTMLElement): number => {
-    measureBody.appendChild(el);
-    const rect = el.getBoundingClientRect();
-    const computed = window.getComputedStyle(el);
-    const mt = parseFloat(computed.marginTop) || 0;
-    const mb = parseFloat(computed.marginBottom) || 0;
-    const h = Math.ceil((rect.height || 24) + mt + mb);
-    measureBody.removeChild(el);
-    return h;
+  const mountFlowItem = (container: HTMLElement, item: FlowItem): HTMLElement => {
+    if (item.type === 'list-item') {
+      const last = container.lastElementChild as HTMLElement | null;
+      let targetList: HTMLElement;
+      if (last && last.tagName.toLowerCase() === item.listTag) {
+        targetList = last;
+      } else {
+        targetList = document.createElement(item.listTag);
+        if (item.listClass) targetList.className = item.listClass;
+        if (item.listTag === 'ol' && item.index > 1) {
+          targetList.setAttribute('start', String(item.index));
+        }
+        container.appendChild(targetList);
+      }
+      const li = item.element.cloneNode(true) as HTMLElement;
+      targetList.appendChild(li);
+      return li;
+    } else {
+      const el = item.element.cloneNode(true) as HTMLElement;
+      container.appendChild(el);
+      return el;
+    }
   };
 
-  const measureFlowItem = (item: FlowItem): number => {
+  const unmountLastFlowItem = (container: HTMLElement, item: FlowItem) => {
     if (item.type === 'list-item') {
-      const tempList = document.createElement(item.listTag);
-      if (item.listClass) tempList.className = item.listClass;
-      tempList.appendChild(item.element);
-      measureBody.appendChild(tempList);
-
-      const rect = item.element.getBoundingClientRect();
-      const computed = window.getComputedStyle(item.element);
-      const mt = parseFloat(computed.marginTop) || 0;
-      const mb = parseFloat(computed.marginBottom) || 0;
-      const h = Math.ceil((rect.height || 24) + mt + mb);
-
-      tempList.removeChild(item.element);
-      measureBody.removeChild(tempList);
-      return h;
+      const last = container.lastElementChild as HTMLElement | null;
+      if (last && last.tagName.toLowerCase() === item.listTag) {
+        const lastLi = last.lastElementChild;
+        if (lastLi) last.removeChild(lastLi);
+        if (last.children.length === 0) {
+          container.removeChild(last);
+        }
+      }
+    } else {
+      const last = container.lastElementChild;
+      if (last) container.removeChild(last);
     }
-    return measureElement(item.element);
   };
 
   // 段落句级/行级安全拆分器：当长段落跨页时，拆出当前页能容纳的最大句段
   const trySplitParagraph = (
     p: HTMLElement,
-    availableHeight: number
+    maxAllowedHeight: number
   ): { fitPart: HTMLElement; remainPart: HTMLElement } | null => {
-    if (availableHeight < 32) return null;
     if (p.querySelector('img, pre, svg, table, canvas')) return null;
 
     const rawHtml = p.innerHTML;
@@ -425,8 +444,10 @@ export async function buildCardPages(
     for (let i = 1; i < chunks.length; i++) {
       const testP = p.cloneNode(false) as HTMLElement;
       testP.innerHTML = chunks.slice(0, i).join('');
-      const h = measureElement(testP);
-      if (h <= availableHeight) {
+      measureBody.appendChild(testP);
+      const currentH = measureBody.getBoundingClientRect().height;
+      measureBody.removeChild(testP);
+      if (currentH <= maxAllowedHeight) {
         bestFitIndex = i;
       } else {
         break;
@@ -444,11 +465,14 @@ export async function buildCardPages(
     return { fitPart: fitP, remainPart: remainP };
   };
 
-  const isIntroOrHeading = (el: HTMLElement): boolean => {
+  const isOrphanCandidate = (el: HTMLElement): boolean => {
     const tag = el.tagName.toLowerCase();
     if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) return true;
     const text = (el.textContent || '').trim();
-    if (text.endsWith('：') || text.endsWith(':')) return true;
+    // 仅针对短引导行（<= 15 字且以冒号结尾，如“在计算机里：”或“例如：”）
+    if (text.length <= 15 && (text.endsWith('：') || text.endsWith(':'))) {
+      return true;
+    }
     return false;
   };
 
@@ -461,18 +485,24 @@ export async function buildCardPages(
   const pageCapacity = Math.max(200, targetHeight - padH - footerH);
   const firstPageCapacity = Math.max(150, pageCapacity - titleH);
 
-  // 预判整篇总高：若单页即可完整容纳，直接保持单张卡片
-  const totalContentHeight = flowItems.reduce((acc, it) => acc + measureFlowItem(it), 0);
+  // 预判整篇总高：在真实容器中挂载全部内容，若单页即可完整容纳直接返回单卡片
+  measureBody.innerHTML = '';
+  for (const it of flowItems) {
+    mountFlowItem(measureBody, it);
+  }
+  const totalContentHeight = measureBody.getBoundingClientRect().height;
+  measureBody.innerHTML = '';
+
   if (totalContentHeight <= firstPageCapacity) {
     document.body.removeChild(measureHost);
     formatPagedCard(fullCard);
     return [fullCard];
   }
 
-  // 4. 行驱动充盈贪心排版引擎（消除底部大面积悬空）
+  // 4. 行驱动充盈贪心排版引擎（精确基于真实渲染容器高度）
   const pageGroups: FlowItem[][] = [];
   let currentPageItems: FlowItem[] = [];
-  let currentHeight = 0;
+  measureBody.innerHTML = '';
 
   const queue: FlowItem[] = [...flowItems];
 
@@ -480,54 +510,60 @@ export async function buildCardPages(
     const item = queue.shift()!;
     const isFirst = pageGroups.length === 0;
     const maxLimit = isFirst ? firstPageCapacity : pageCapacity;
-    const itemH = measureFlowItem(item);
 
-    // 4.1 当前项能直接放入本页
-    if (currentHeight + itemH <= maxLimit) {
+    // 4.1 挂载进离屏度量容器测试是否能放入
+    mountFlowItem(measureBody, item);
+    const measuredH = measureBody.getBoundingClientRect().height;
+
+    if (measuredH <= maxLimit) {
       currentPageItems.push(item);
-      currentHeight += itemH;
       continue;
     }
 
-    // 4.2 放不下时，尝试行级拆分段落
-    const remainingSpace = maxLimit - currentHeight;
+    // 4.2 放不下时，撤出该项
+    unmountLastFlowItem(measureBody, item);
+
+    // 4.3 尝试句级/行级拆分段落
     if (item.type === 'block' && item.element.tagName.toLowerCase() === 'p') {
-      const splitRes = trySplitParagraph(item.element, remainingSpace);
+      const splitRes = trySplitParagraph(item.element, maxLimit);
       if (splitRes) {
+        mountFlowItem(measureBody, { type: 'block', element: splitRes.fitPart });
         currentPageItems.push({ type: 'block', element: splitRes.fitPart });
         queue.unshift({ type: 'block', element: splitRes.remainPart });
 
         pageGroups.push(currentPageItems);
         currentPageItems = [];
-        currentHeight = 0;
+        measureBody.innerHTML = '';
         continue;
       }
     }
 
-    // 4.3 无法拆分或剩余空间不足
+    // 4.4 无法拆分或剩余空间不足
     if (currentPageItems.length > 0) {
-      // 孤行标题/冒号引言保护：避免小标题独自孤悬在页面最底端
+      // 孤行短标题/引导冒号保护：避免小标题独自孤悬在页面最底端
       const last = currentPageItems[currentPageItems.length - 1];
-      if (isIntroOrHeading(last.element) && currentPageItems.length > 1) {
+      if (isOrphanCandidate(last.element) && currentPageItems.length > 1) {
         const orphan = currentPageItems.pop()!;
+        unmountLastFlowItem(measureBody, orphan);
         queue.unshift(item);
         queue.unshift(orphan);
         pageGroups.push(currentPageItems);
         currentPageItems = [];
-        currentHeight = 0;
+        measureBody.innerHTML = '';
         continue;
       }
 
       queue.unshift(item);
       pageGroups.push(currentPageItems);
       currentPageItems = [];
-      currentHeight = 0;
+      measureBody.innerHTML = '';
     } else {
       // 单项本身极高（如特大图表或代码块），本页为空时强制承接
+      mountFlowItem(measureBody, item);
       currentPageItems.push(item);
       pageGroups.push(currentPageItems);
       currentPageItems = [];
-      currentHeight = 0;
+      measureBody.innerHTML = '';
     }
   }
 

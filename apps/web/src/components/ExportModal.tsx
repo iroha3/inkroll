@@ -41,8 +41,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   const sceneInfoMap: Record<string, { label: string; name: string; size: string }> = {
     xiaohongshu: { label: '小红书卡片', name: '小红书标准卡片 (3:4)', size: '1242×1660' },
+    weibo: { label: '微博卡片', name: '微博黄金图文卡片 (3:4)', size: '1242×1660' },
     square: { label: '朋友圈卡片', name: '朋友圈方形卡片 (1:1)', size: '1242×1242' },
-    slide: { label: '幻灯片卡片', name: '幻灯片知识卡片 (16:9)', size: '1920×1080' },
+    slide: { label: 'X / 幻灯片卡片', name: 'X / Bsky / 幻灯片卡片 (16:9)', size: '1920×1080' },
     story: { label: '竖屏海报', name: '竖屏全景海报 (9:16)', size: '1080×1920' },
   };
   const activeSceneInfo = (config.scene && sceneInfoMap[config.scene]) || sceneInfoMap.xiaohongshu;
