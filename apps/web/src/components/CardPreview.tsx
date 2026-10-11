@@ -10,6 +10,7 @@ interface CardPreviewProps {
   cardRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: number;
   renderMode: RenderMode;
+  resetScrollTrigger?: number;
   onPageCountChange?: (count: number) => void;
 }
 
@@ -19,6 +20,7 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   cardRef,
   zoomLevel,
   renderMode,
+  resetScrollTrigger = 0,
   onPageCountChange,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,6 +35,43 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   pagesTotalRef.current = pagesTotal;
   const isWheelLockedRef = useRef<boolean>(false);
   const wheelLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 场景与渲染模式切换追踪：切换场景或模式时强制复位到第 1 张卡片
+  const prevSceneRef = useRef<string | undefined>(config.scene);
+  const prevRenderModeRef = useRef<RenderMode>(renderMode);
+  const prevTriggerRef = useRef<number>(resetScrollTrigger);
+  const shouldResetScrollRef = useRef<boolean>(false);
+
+  const resetToFirstPage = () => {
+    setActivePage(1);
+    activePageRef.current = 1;
+    if (scrollRef.current) {
+      const el = scrollRef.current;
+      const originalBehavior = el.style.scrollBehavior;
+      el.style.scrollBehavior = 'auto';
+      el.scrollLeft = 0;
+      el.scrollTop = 0;
+      requestAnimationFrame(() => {
+        if (el) {
+          el.style.scrollBehavior = originalBehavior;
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (
+      config.scene !== prevSceneRef.current ||
+      renderMode !== prevRenderModeRef.current ||
+      resetScrollTrigger !== prevTriggerRef.current
+    ) {
+      prevSceneRef.current = config.scene;
+      prevRenderModeRef.current = renderMode;
+      prevTriggerRef.current = resetScrollTrigger;
+      shouldResetScrollRef.current = true;
+      resetToFirstPage();
+    }
+  }, [config.scene, renderMode, resetScrollTrigger]);
 
   useEffect(() => {
     mermaid.initialize({
@@ -54,6 +93,8 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
     };
 
     const renderCanvas = async () => {
+      const isResetting = shouldResetScrollRef.current;
+
       if (renderMode === 'paged') {
         try {
           const pages = await InkrollCore.buildPages(content, config, { mermaidRenderer });
@@ -62,7 +103,13 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
           hostRef.current.innerHTML = '';
           const total = pages.length;
           setPagesTotal(total);
-          setActivePage(1);
+
+          if (isResetting) {
+            setActivePage(1);
+            activePageRef.current = 1;
+          } else {
+            setActivePage((prev) => Math.min(prev, Math.max(1, total)));
+          }
 
           // 横向滑轨容器：卡片一字排开，支持卡片吸附
           const container = document.createElement('div');
@@ -107,6 +154,15 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
           if (cardRef) {
             (cardRef as any).current = pages[0] || null;
           }
+
+          if (isResetting) {
+            shouldResetScrollRef.current = false;
+            resetToFirstPage();
+            requestAnimationFrame(() => {
+              resetToFirstPage();
+            });
+          }
+
           onPageCountChange?.(total);
         } catch (err) {
           console.error('Failed to build pages:', err);
@@ -121,6 +177,15 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
         if (cardRef) {
           (cardRef as any).current = card;
         }
+
+        if (isResetting) {
+          shouldResetScrollRef.current = false;
+          resetToFirstPage();
+          requestAnimationFrame(() => {
+            resetToFirstPage();
+          });
+        }
+
         onPageCountChange?.(1);
       }
     };
@@ -136,6 +201,11 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   const goToPage = (targetIndex: number) => {
     if (!scrollRef.current || !hostRef.current || renderMode !== 'paged') return;
     const clampedIndex = Math.min(pagesTotalRef.current, Math.max(1, targetIndex));
+    if (clampedIndex === 1) {
+      scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      setActivePage(1);
+      return;
+    }
     const targetEl = hostRef.current.querySelector(
       `[data-page-index="${clampedIndex}"]`
     ) as HTMLElement | null;
@@ -199,7 +269,21 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   // 4. 实时动态计算当前视口中央聚焦的卡片编号
   const handleScroll = () => {
     if (!scrollRef.current || !hostRef.current || renderMode !== 'paged' || pagesTotal <= 1) return;
-    const containerRect = scrollRef.current.getBoundingClientRect();
+    const el = scrollRef.current;
+
+    // 当滚动处于最左边缘时（容差 60px），必定是第 1 页
+    if (el.scrollLeft <= 60) {
+      if (activePage !== 1) setActivePage(1);
+      return;
+    }
+
+    // 当滚动处于最右边缘时（容差 60px），必定是最后一页
+    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 60) {
+      if (activePage !== pagesTotal) setActivePage(pagesTotal);
+      return;
+    }
+
+    const containerRect = el.getBoundingClientRect();
     const containerCenter = containerRect.left + containerRect.width / 2;
 
     const cards = hostRef.current.querySelectorAll('[data-page-index]');

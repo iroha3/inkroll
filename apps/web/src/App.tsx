@@ -162,6 +162,19 @@ export default function App() {
     }
   }, [config]);
 
+  const [resetScrollTrigger, setResetScrollTrigger] = useState<number>(0);
+
+  const handleSelectScene = (newScene: ScenePreset) => {
+    setConfig((prev) => ({ ...prev, scene: newScene }));
+    setRenderMode('paged');
+    setResetScrollTrigger((prev) => prev + 1);
+  };
+
+  const handleSelectRenderMode = (mode: RenderMode) => {
+    setRenderMode(mode);
+    setResetScrollTrigger((prev) => prev + 1);
+  };
+
   return (
     <div className="w-screen h-screen flex flex-col bg-neutral-100 overflow-hidden font-sans">
       {/* 顶栏 Navbar */}
@@ -171,9 +184,9 @@ export default function App() {
         viewMode={viewMode}
         setViewMode={setViewMode}
         renderMode={renderMode}
-        setRenderMode={setRenderMode}
+        setRenderMode={handleSelectRenderMode}
         scene={config.scene || 'xiaohongshu'}
-        onSelectScene={(newScene) => setConfig((prev) => ({ ...prev, scene: newScene }))}
+        onSelectScene={handleSelectScene}
         pageCount={pageCount}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
@@ -212,6 +225,7 @@ export default function App() {
               cardRef={cardRef}
               zoomLevel={zoomLevel}
               renderMode={renderMode}
+              resetScrollTrigger={resetScrollTrigger}
               onPageCountChange={setPageCount}
             />
           </div>
