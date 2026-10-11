@@ -35,32 +35,37 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
           </button>
         </div>
 
-        <div className="flex-1 p-3.5 space-y-5 divide-y divide-neutral-100 text-xs">
-          {/* 1. Theme Selection: 经典纯白首选，松墨黛绿次之，柔蓝印记，极简暗黑 */}
+        <div className="flex-1 p-3.5 pb-10 space-y-5 divide-y divide-neutral-100 text-xs">
+          {/* 1. Theme Selection: 4 款精选主题（2 字单行排列，无挤压打勾符） */}
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 font-semibold text-[11px] text-neutral-400 uppercase tracking-wider">
               <Palette className="w-3 h-3" />
               <span>主题风格</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5">
               {[
-                { id: 'classic-white', name: '经典纯白', bg: 'bg-white border-neutral-200 text-neutral-800' },
-                { id: 'kami-paper', name: '松墨黛绿', bg: 'bg-[#f5f4ed] border-[#e8e6dc] text-[#141413]' },
-                { id: 'soft-blue', name: '柔蓝印记', bg: 'bg-[#f8fafc] border-blue-200 text-neutral-800' },
-                { id: 'minimal-dark', name: '极简暗黑', bg: 'bg-[#0d1117] text-white border-neutral-700' },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => updateConfig('theme', t.id as ThemeStyle)}
-                  className={`p-2 border rounded-xl text-left text-xs transition-all flex items-center justify-between cursor-pointer ${t.bg} ${
-                    config.theme === t.id ? 'ring-2 ring-black font-semibold shadow-xs' : 'hover:opacity-90'
-                  }`}
-                >
-                  <span>{t.name}</span>
-                  {config.theme === t.id && <span className="text-[10px]">✓</span>}
-                </button>
-              ))}
+                { id: 'classic-white', name: '纯白', bg: 'bg-white border-neutral-200 text-neutral-800' },
+                { id: 'kami-paper', name: '黛绿', bg: 'bg-[#f5f4ed] border-[#dedcd2] text-[#141413]' },
+                { id: 'soft-blue', name: '柔蓝', bg: 'bg-[#f0f7ff] border-blue-200/80 text-[#1e3a8a]' },
+                { id: 'minimal-dark', name: '暗黑', bg: 'bg-[#18181b] border-neutral-700 text-neutral-200' },
+              ].map((t) => {
+                const isSelected = config.theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => updateConfig('theme', t.id as ThemeStyle)}
+                    className={`py-2 px-1 border rounded-xl text-center text-xs transition-all cursor-pointer flex items-center justify-center ${t.bg} ${
+                      isSelected
+                        ? 'border-neutral-900 font-bold shadow-xs ring-1 ring-neutral-900/15'
+                        : 'opacity-70 hover:opacity-100 hover:border-neutral-300'
+                    }`}
+                    title={t.id === 'kami-paper' ? '松墨黛绿 (Kami Paper)' : t.name}
+                  >
+                    <span>{t.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -158,7 +163,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
           <div className="pt-4 space-y-3">
             <div className="flex items-center gap-1.5 font-semibold text-[11px] text-neutral-400 uppercase tracking-wider">
               <Layout className="w-3 h-3" />
-              <span>尺寸与版面</span>
+              <span>版面尺寸</span>
             </div>
 
             {/* Width */}
@@ -187,7 +192,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
 
             {/* Padding */}
             <div>
-              <label className="block text-[11px] text-neutral-400 mb-1">留白呼吸感</label>
+              <label className="block text-[11px] text-neutral-400 mb-1">卡片留白</label>
               <div className="grid grid-cols-3 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
                 {[
                   { id: 'compact', label: '紧凑' },
@@ -250,7 +255,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
             </div>
 
             {config.showWatermark && (
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-2 pt-1">
                 <input
                   type="text"
                   value={config.watermarkText}
@@ -258,6 +263,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
                   placeholder="落款内容..."
                   className="w-full text-xs px-2.5 py-1.5 border border-neutral-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-black/20"
                 />
+
+                {/* 对齐方式切换：居中在左，居右在右（符合自然方位） */}
+                <div className="grid grid-cols-2 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
+                  <button
+                    onClick={() => updateConfig('watermarkPosition', 'bottom-center')}
+                    className={`py-1 text-center text-xs rounded-md transition-all cursor-pointer ${
+                      config.watermarkPosition === 'bottom-center'
+                        ? 'bg-white shadow-xs font-semibold text-black'
+                        : 'text-neutral-500 hover:text-black'
+                    }`}
+                  >
+                    居中
+                  </button>
+                  <button
+                    onClick={() => updateConfig('watermarkPosition', 'bottom-right')}
+                    className={`py-1 text-center text-xs rounded-md transition-all cursor-pointer ${
+                      config.watermarkPosition === 'bottom-right'
+                        ? 'bg-white shadow-xs font-semibold text-black'
+                        : 'text-neutral-500 hover:text-black'
+                    }`}
+                  >
+                    居右
+                  </button>
+                </div>
               </div>
             )}
           </div>

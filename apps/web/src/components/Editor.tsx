@@ -182,22 +182,104 @@ export const Editor: React.FC<EditorProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-white border-r border-neutral-200/80 text-neutral-800 select-none">
-      {/* 顶部精简工具头 */}
-      <div className="px-3.5 py-2 border-b border-neutral-200/70 bg-neutral-50/60 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <FileText className="w-3.5 h-3.5 text-neutral-500" />
-          <span className="font-semibold text-xs text-neutral-800">编辑</span>
+      {/* 统一单行工具栏（整合排版工具 + 文档操作，垂直高度极致精简） */}
+      <div className="px-3 py-1.5 border-b border-neutral-200/80 bg-neutral-50/70 flex items-center justify-between gap-1 text-neutral-600 text-xs shrink-0 overflow-x-auto">
+        {/* 左侧：Markdown 格式化排版工具 */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            onClick={() => insertFormatting('**', '**')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="加粗 **bold**"
+          >
+            <Bold className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('*', '*')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="斜体 *italic*"
+          >
+            <Italic className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('==', '==')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="高亮标记 ==text=="
+          >
+            <Highlighter className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('# ')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="一级标题 # "
+          >
+            <Heading1 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('> ')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="引用块 > "
+          >
+            <Quote className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('`', '`')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="行内代码 `code`"
+          >
+            <Code className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="w-[1px] h-3 bg-neutral-300/80 mx-1" />
+
+          <button
+            onClick={() => insertFormatting('- ')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="无序列表"
+          >
+            <List className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('1. ')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="有序列表"
+          >
+            <ListOrdered className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('- [ ] ')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="任务列表"
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+          </button>
+
+          <div className="w-[1px] h-3 bg-neutral-300/80 mx-1" />
+
+          <button
+            onClick={() => insertFormatting('[', '](https://example.com)')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="插入链接"
+          >
+            <Link className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('\n| 标题1 | 标题2 |\n| --- | --- |\n| 内容1 | 内容2 |\n')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="插入表格"
+          >
+            <Table className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => insertFormatting('\n---\n')}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-600 hover:text-black transition-colors cursor-pointer"
+            title="插入分割线 ---"
+          >
+            <Divide className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* 字数 */}
-          <span className="text-[11px] font-mono text-neutral-400 pr-0.5">
-            {content.length}
-          </span>
-
-          <span className="text-neutral-200">|</span>
-
-          {/* 撤销 / 重做 */}
+        {/* 右侧：文档操作 (撤销/重做/导入/示例/清空/字数) */}
+        <div className="flex items-center gap-1 shrink-0 ml-auto pl-1">
           <button
             onClick={onUndo}
             className="p-1 hover:bg-neutral-200/60 rounded text-neutral-500 hover:text-black transition-colors cursor-pointer"
@@ -213,9 +295,8 @@ export const Editor: React.FC<EditorProps> = ({
             <RotateCw className="w-3.5 h-3.5" />
           </button>
 
-          <span className="text-neutral-200">|</span>
+          <div className="w-[1px] h-3 bg-neutral-300/80 mx-0.5" />
 
-          {/* 导入 */}
           <input
             type="file"
             ref={fileInputRef}
@@ -231,16 +312,14 @@ export const Editor: React.FC<EditorProps> = ({
             <Upload className="w-3.5 h-3.5" />
           </button>
 
-          {/* 恢复示例 */}
           <button
             onClick={onResetDefault}
-            className="px-1 py-0.5 hover:bg-neutral-200/60 rounded text-[11px] text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+            className="px-1.5 py-0.5 hover:bg-neutral-200/60 rounded text-[11px] text-neutral-500 hover:text-black transition-colors cursor-pointer"
             title="恢复默认金句示例"
           >
             示例
           </button>
 
-          {/* 清空 */}
           <button
             onClick={() => onChange('')}
             className="p-1 hover:bg-red-50 rounded text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
@@ -248,110 +327,13 @@ export const Editor: React.FC<EditorProps> = ({
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+
+          <div className="w-[1px] h-3 bg-neutral-300/80 mx-0.5" />
+
+          <span className="text-[11px] font-mono text-neutral-400 pl-0.5 select-none" title="字数统计">
+            {content.length}
+          </span>
         </div>
-      </div>
-
-      {/* 快捷排版工具条（紧凑单行） */}
-      <div className="px-3 py-1.5 border-b border-neutral-100 bg-white flex flex-wrap items-center gap-1 text-neutral-600 text-xs overflow-x-auto shrink-0">
-        <button
-          onClick={() => insertFormatting('**', '**')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="加粗 **bold**"
-        >
-          <Bold className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('*', '*')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="斜体 *italic*"
-        >
-          <Italic className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('==', '==')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="高亮标记 ==text=="
-        >
-          <Highlighter className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('# ')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="一级标题 # "
-        >
-          <Heading1 className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('> ')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="引用块 > "
-        >
-          <Quote className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('`', '`')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="行内代码 `code`"
-        >
-          <Code className="w-3.5 h-3.5" />
-        </button>
-
-        <div className="w-[1px] h-3.5 bg-neutral-200 mx-1" />
-
-        <button
-          onClick={() => insertFormatting('- ')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="无序列表"
-        >
-          <List className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('1. ')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="有序列表"
-        >
-          <ListOrdered className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('- [ ] ')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="任务列表"
-        >
-          <CheckSquare className="w-3.5 h-3.5" />
-        </button>
-
-        <div className="w-[1px] h-3.5 bg-neutral-200 mx-1" />
-
-        <button
-          onClick={() => insertFormatting('[', '](https://example.com)')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入链接"
-        >
-          <Link className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('\n| 标题1 | 标题2 |\n| --- | --- |\n| 内容1 | 内容2 |\n')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入表格"
-        >
-          <Table className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('\n---\n')}
-          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入分割线 ---"
-        >
-          <Divide className="w-3.5 h-3.5" />
-        </button>
       </div>
 
       {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（字体放大至 15px，极度清晰） */}

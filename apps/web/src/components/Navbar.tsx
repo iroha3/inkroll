@@ -115,27 +115,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
-        {/* Settings Toggle */}
+        {/* Settings Toggle: 开启时浅灰质感底色，绝不抢占主导出按钮的纯黑主强调视觉 */}
         <button
           onClick={() => setShowSettings((s) => !s)}
           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 border rounded-xl transition-all cursor-pointer ${
             showSettings
-              ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-              : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-50'
+              ? 'bg-neutral-100 text-neutral-900 border-neutral-300 font-semibold shadow-inner'
+              : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 hover:text-black'
           }`}
-          title="外观与排版参数设置"
+          title="设置与排版参数"
         >
           <Sliders className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">外观参数</span>
+          <span>设置</span>
         </button>
 
-        {/* Main Export Long Image Button */}
+        {/* Main Export Long Image Button: 全局唯一主行动点强调色 */}
         <button
           onClick={onExportClick}
           className="flex items-center gap-1.5 text-xs font-semibold bg-black hover:bg-neutral-800 text-white px-3.5 py-1.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+          title="导出长图"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>导出长图</span>
+          <span>导出</span>
         </button>
       </div>
     </header>
