@@ -38,10 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           onClick={onAboutClick}
           className="group flex items-center gap-2.5 p-1 -ml-1 rounded-xl hover:bg-neutral-100 transition-all cursor-pointer text-left"
-          title="点击查看关于墨卷与致敬"
+          title="关于墨卷"
         >
-          <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:scale-105 transition-transform">
-            墨
+          <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold shadow-sm group-hover:scale-105 transition-transform">
+            <FileText className="w-4 h-4 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

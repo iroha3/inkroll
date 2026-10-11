@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Sparkles, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
+import { X, Sparkles, ExternalLink, ShieldCheck, Heart, FileText } from 'lucide-react';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -18,8 +18,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#e8e6dc]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold text-sm shadow-xs">
-              墨
+            <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold shadow-xs">
+              <FileText className="w-4 h-4 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

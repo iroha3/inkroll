@@ -175,11 +175,13 @@ export default function App() {
 
       {/* 工作区：分栏收窄 40px，居中留白显著提升 */}
       <main className="flex-1 flex overflow-hidden relative">
-        {/* 左侧：Markdown 编辑器 (占比收敛至 32%~35%，释放横向留白) */}
+        {/* 左侧：Markdown 编辑器 (舒适适中的宽幅，兼顾大段写作与居中留白) */}
         {(viewMode === 'split' || viewMode === 'editor-only') && (
           <div
             className={`${
-              viewMode === 'editor-only' ? 'w-full' : 'w-full lg:w-[35%] xl:w-[32%] min-w-[320px] max-w-[420px]'
+              viewMode === 'editor-only'
+                ? 'w-full'
+                : 'w-full lg:w-[42%] xl:w-[38%] min-w-[440px]'
             } h-full z-10 transition-all shrink-0`}
           >
             <Editor

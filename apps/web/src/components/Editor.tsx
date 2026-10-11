@@ -182,18 +182,17 @@ export const Editor: React.FC<EditorProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-white border-r border-neutral-200/80 text-neutral-800 select-none">
-      {/* 顶部精简工具头：干掉预设下拉框，保留字数、导入、清空与示例 */}
-      <div className="px-3.5 py-2.5 border-b border-neutral-200/70 bg-neutral-50/60 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      {/* 顶部精简工具头 */}
+      <div className="px-3.5 py-2 border-b border-neutral-200/70 bg-neutral-50/60 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-neutral-500" />
-          <span className="font-semibold text-xs text-neutral-800 tracking-tight">Markdown 稿纸</span>
-          <span className="text-[10px] text-neutral-400 font-mono">● 自动保存</span>
+          <span className="font-semibold text-xs text-neutral-800">编辑</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* 字数统计 */}
-          <span className="text-[11px] font-mono text-neutral-400">
-            {content.length} 字
+        <div className="flex items-center gap-1.5">
+          {/* 字数 */}
+          <span className="text-[11px] font-mono text-neutral-400 pr-0.5">
+            {content.length}
           </span>
 
           <span className="text-neutral-200">|</span>
@@ -216,7 +215,7 @@ export const Editor: React.FC<EditorProps> = ({
 
           <span className="text-neutral-200">|</span>
 
-          {/* 导入文件 */}
+          {/* 导入 */}
           <input
             type="file"
             ref={fileInputRef}
@@ -227,7 +226,7 @@ export const Editor: React.FC<EditorProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-1 hover:bg-neutral-200/60 rounded text-neutral-500 hover:text-black transition-colors cursor-pointer"
-            title="导入本地 .md 文件"
+            title="导入文件"
           >
             <Upload className="w-3.5 h-3.5" />
           </button>
@@ -235,8 +234,8 @@ export const Editor: React.FC<EditorProps> = ({
           {/* 恢复示例 */}
           <button
             onClick={onResetDefault}
-            className="text-[11px] text-neutral-400 hover:text-neutral-700 hover:underline transition-colors cursor-pointer px-0.5"
-            title="恢复默认金句卡片示例"
+            className="px-1 py-0.5 hover:bg-neutral-200/60 rounded text-[11px] text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+            title="恢复默认金句示例"
           >
             示例
           </button>
@@ -245,7 +244,7 @@ export const Editor: React.FC<EditorProps> = ({
           <button
             onClick={() => onChange('')}
             className="p-1 hover:bg-red-50 rounded text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
-            title="清空编辑器"
+            title="清空"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -355,17 +354,17 @@ export const Editor: React.FC<EditorProps> = ({
         </button>
       </div>
 
-      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（无底栏，100% 垂直利用率） */}
+      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（字体放大至 15px，极度清晰） */}
       <div className="flex-1 relative overflow-hidden bg-white">
         {/* 底层染色遮罩层 */}
         <pre
           ref={highlightRef}
           aria-hidden="true"
-          className="absolute inset-0 p-4 m-0 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-hidden box-border"
+          className="absolute inset-0 p-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-hidden box-border"
           dangerouslySetInnerHTML={{ __html: highlightedHtml }}
         />
 
-        {/* 顶层透明原生交互 Textarea（保持原生输入法 IME、手感和撤销栈零延迟） */}
+        {/* 顶层透明原生交互 Textarea（字体与底层严格像素级对齐） */}
         <textarea
           ref={textareaRef}
           value={content}
@@ -374,7 +373,7 @@ export const Editor: React.FC<EditorProps> = ({
           onKeyDown={handleTextareaKeyDown}
           placeholder="在此输入或粘贴 Markdown 内容..."
           spellCheck={false}
-          className="absolute inset-0 p-4 m-0 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-auto box-border select-text"
+          className="absolute inset-0 p-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-auto box-border select-text"
         />
       </div>
     </div>
