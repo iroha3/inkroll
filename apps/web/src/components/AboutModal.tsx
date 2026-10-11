@@ -49,7 +49,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             将 Markdown 随笔、读书笔记、公式与图表沉淀为优雅的图文卡片。
           </p>
           <p>
-            推荐安装 <a href="https://github.com/tw93/Kami/tree/main/assets/fonts" target="_blank" rel="noreferrer" className="underline hover:text-black">「霞鹜文楷 / 思源宋体」</a>，以获得更佳的衬线字体排版效果。
+            推荐安装「<a href="https://github.com/tw93/Kami/tree/main/assets/fonts" target="_blank" rel="noreferrer" className="underline hover:text-black">霞鹜文楷 / 思源宋体</a>」，以获得更佳的衬线字体排版效果。
           </p>
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 pt-0.5">
             <Heart className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
