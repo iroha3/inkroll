@@ -336,17 +336,18 @@ export const Editor: React.FC<EditorProps> = ({
         </div>
       </div>
 
-      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（字体放大至 15px，极度清晰） */}
+      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（字体放大至 15px，严格统一滚动槽与右侧留白） */}
       <div className="flex-1 relative overflow-hidden bg-white">
-        {/* 底层染色遮罩层 */}
+        {/* 底层染色遮罩层：保持 overflow-y-scroll 使得排版折行宽度与顶层 Textarea 像素级 100% 对齐 */}
         <pre
           ref={highlightRef}
           aria-hidden="true"
-          className="absolute inset-0 p-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-hidden box-border"
+          style={{ scrollbarColor: 'transparent transparent' }}
+          className="absolute inset-0 pl-4 pr-8 py-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-y-scroll overflow-x-hidden box-border"
           dangerouslySetInnerHTML={{ __html: highlightedHtml }}
         />
 
-        {/* 顶层透明原生交互 Textarea（字体与底层严格像素级对齐） */}
+        {/* 顶层透明原生交互 Textarea（右侧 pr-8 保证文字与滚动条间至少保留 15px 呼吸间距，折行完全吻合） */}
         <textarea
           ref={textareaRef}
           value={content}
@@ -355,7 +356,7 @@ export const Editor: React.FC<EditorProps> = ({
           onKeyDown={handleTextareaKeyDown}
           placeholder="在此输入或粘贴 Markdown 内容..."
           spellCheck={false}
-          className="absolute inset-0 p-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-auto box-border select-text"
+          className="absolute inset-0 pl-4 pr-8 py-4 m-0 font-mono text-[15px] leading-[1.75] whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-y-scroll overflow-x-hidden box-border select-text z-10"
         />
       </div>
     </div>

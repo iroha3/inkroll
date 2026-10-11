@@ -8,19 +8,34 @@
 /* 字体体系：提供显式现代跨平台无衬线、衬线与等宽字体回退列表，防止 SVG 沙箱光栅化时回退至宋体 */
 .md-font-sans {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 .md-font-serif {
-  font-family: "Charter", "Palatino Linotype", Palatino, Georgia, Cambria, "Source Han Serif SC", "Noto Serif SC", "Songti SC", "SimSun", ui-serif, "Source Serif Pro", "Times New Roman", Times, serif;
+  font-family: "Charter", "TsangerJinKai02", "TsangerJinKai02-W04", "LXGW WenKai", "霞鹜文楷", "Palatino Linotype", Palatino, Georgia, Cambria, "Source Han Serif SC", "思源宋体", "Noto Serif SC", "Songti SC", "SimSun", ui-serif, "Source Serif Pro", "Times New Roman", Times, serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 .md-font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 正文基础：统一基准 15px，绝对像素间距防宿主 rem 缩放污染 */
+/* 正文基础：统一基准 15px，绝对像素间距防宿主 rem 缩放污染，强制抗锯齿统一渲染粗细 */
 .inkroll-card .md-body,
 .md-body {
   font-size: 15px;
   line-height: 1.7;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   overflow-wrap: anywhere;
 }
 .inkroll-card .md-body.fs-sm, .md-body.fs-sm { font-size: 14px; }
@@ -280,6 +295,10 @@
   overflow: hidden;
   font-size: 15px;
   line-height: 1.7;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   letter-spacing: normal;
   word-spacing: normal;
   text-align: left;
