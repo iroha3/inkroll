@@ -200,7 +200,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <div className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/60 text-xs">
                 <div className="flex items-center gap-1.5 text-neutral-500">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="font-medium text-[11px]">场景画幅已锁定</span>
+                  <span className="font-medium text-[11px]">专属画幅优化</span>
                 </div>
                 <span className="font-mono text-[11px] font-semibold text-neutral-800">
                   {config.scene === 'square'
@@ -209,7 +209,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     ? '16:9 · 1920×1080'
                     : config.scene === 'story'
                     ? '9:16 · 1080×1920'
-                    : '小红书 3:4 · 1242×1660'}
+                    : '3:4 · 1242×1660'}
                 </span>
               </div>
             )}

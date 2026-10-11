@@ -323,99 +323,234 @@ export async function buildCardPages(
   }
 
   const children = Array.from(bodyEl.children) as HTMLElement[];
-  if (children.length <= 1) {
+  if (children.length === 0) {
     formatPagedCard(fullCard);
     return [fullCard];
   }
 
-  // 临时挂载到离屏容器中测量各块实际像素高度
-  const host = document.createElement('div');
-  host.style.cssText =
-    `position:fixed;left:-99999px;top:0;width:${targetWidth}px;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;`;
-  host.appendChild(fullCard);
-  document.body.appendChild(host);
+  // 1. 细粒度行级/条目级流元素模型（行驱动拆解）
+  type FlowItem =
+    | {
+        type: 'block';
+        element: HTMLElement;
+      }
+    | {
+        type: 'list-item';
+        element: HTMLLIElement;
+        listTag: 'ul' | 'ol';
+        listClass: string;
+        index: number;
+      };
 
-  // 计算固定装饰层的高度（padding、title、footer）
-  const paddingMap: Record<string, number> = { compact: 40, normal: 56, spacious: 72 };
-  const padH = paddingMap[cfg.padding] || 56;
-  // 恒定预留标准页脚高度槽位（44px）：确保无论是否启用落款/页脚，单页净正文容积与画幅总高严格恒定
-  const footerH = 44;
-  const titleH = cfg.showTitle && cfg.titleText ? 64 : 0;
-
-  // 1. 统计所有块元素的真实渲染高度与边距
-  const blockHeights: number[] = [];
-  let totalContentHeight = 0;
-
+  const flowItems: FlowItem[] = [];
   for (const child of children) {
-    const rect = child.getBoundingClientRect();
-    const h = rect.height || 36;
-    const computed = window.getComputedStyle(child);
-    const mt = parseFloat(computed.marginTop) || 0;
-    const mb = parseFloat(computed.marginBottom) || 0;
-    const blockTotalH = Math.ceil(h + mt + mb);
-    blockHeights.push(blockTotalH);
-    totalContentHeight += blockTotalH;
+    const tag = child.tagName.toLowerCase();
+    if (tag === 'ul' || tag === 'ol') {
+      const listTag = tag as 'ul' | 'ol';
+      const listClass = child.className || '';
+      const lis = Array.from(child.children) as HTMLLIElement[];
+      lis.forEach((li, idx) => {
+        flowItems.push({
+          type: 'list-item',
+          element: li,
+          listTag,
+          listClass,
+          index: idx + 1,
+        });
+      });
+    } else {
+      flowItems.push({
+        type: 'block',
+        element: child,
+      });
+    }
   }
 
-  document.body.removeChild(host);
+  // 2. 临时挂载到离屏容器中精确度量实际像素高度
+  const measureHost = document.createElement('div');
+  measureHost.className = fullCard.className;
+  measureHost.style.cssText =
+    `position:fixed;left:-99999px;top:0;width:${targetWidth}px;overflow:hidden;pointer-events:none;opacity:0;z-index:-1;`;
+  const measureBody = createBodyContainer(cfg);
+  measureHost.appendChild(measureBody);
+  document.body.appendChild(measureHost);
 
-  // 2. 严格基于目标总高度计算单页净正文容量
+  const measureElement = (el: HTMLElement): number => {
+    measureBody.appendChild(el);
+    const rect = el.getBoundingClientRect();
+    const computed = window.getComputedStyle(el);
+    const mt = parseFloat(computed.marginTop) || 0;
+    const mb = parseFloat(computed.marginBottom) || 0;
+    const h = Math.ceil((rect.height || 24) + mt + mb);
+    measureBody.removeChild(el);
+    return h;
+  };
+
+  const measureFlowItem = (item: FlowItem): number => {
+    if (item.type === 'list-item') {
+      const tempList = document.createElement(item.listTag);
+      if (item.listClass) tempList.className = item.listClass;
+      tempList.appendChild(item.element);
+      measureBody.appendChild(tempList);
+
+      const rect = item.element.getBoundingClientRect();
+      const computed = window.getComputedStyle(item.element);
+      const mt = parseFloat(computed.marginTop) || 0;
+      const mb = parseFloat(computed.marginBottom) || 0;
+      const h = Math.ceil((rect.height || 24) + mt + mb);
+
+      tempList.removeChild(item.element);
+      measureBody.removeChild(tempList);
+      return h;
+    }
+    return measureElement(item.element);
+  };
+
+  // 段落句级/行级安全拆分器：当长段落跨页时，拆出当前页能容纳的最大句段
+  const trySplitParagraph = (
+    p: HTMLElement,
+    availableHeight: number
+  ): { fitPart: HTMLElement; remainPart: HTMLElement } | null => {
+    if (availableHeight < 32) return null;
+    if (p.querySelector('img, pre, svg, table, canvas')) return null;
+
+    const rawHtml = p.innerHTML;
+    let chunks = rawHtml.split(/(?<=[。！？；\n])/);
+    if (chunks.length <= 1) {
+      chunks = rawHtml.split(/(?<=[，,、])/);
+      if (chunks.length <= 1) return null;
+    }
+
+    let bestFitIndex = -1;
+    for (let i = 1; i < chunks.length; i++) {
+      const testP = p.cloneNode(false) as HTMLElement;
+      testP.innerHTML = chunks.slice(0, i).join('');
+      const h = measureElement(testP);
+      if (h <= availableHeight) {
+        bestFitIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (bestFitIndex <= 0) return null;
+
+    const fitP = p.cloneNode(false) as HTMLElement;
+    fitP.innerHTML = chunks.slice(0, bestFitIndex).join('');
+
+    const remainP = p.cloneNode(false) as HTMLElement;
+    remainP.innerHTML = chunks.slice(bestFitIndex).join('');
+
+    return { fitPart: fitP, remainPart: remainP };
+  };
+
+  const isIntroOrHeading = (el: HTMLElement): boolean => {
+    const tag = el.tagName.toLowerCase();
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) return true;
+    const text = (el.textContent || '').trim();
+    if (text.endsWith('：') || text.endsWith(':')) return true;
+    return false;
+  };
+
+  // 3. 计算单页净正文容积
+  const paddingMap: Record<string, number> = { compact: 40, normal: 56, spacious: 72 };
+  const padH = paddingMap[cfg.padding] || 56;
+  const footerH = 44; // 恒定预留页脚槽位
+  const titleH = cfg.showTitle && cfg.titleText ? 64 : 0;
+
   const pageCapacity = Math.max(200, targetHeight - padH - footerH);
   const firstPageCapacity = Math.max(150, pageCapacity - titleH);
 
-  // 若整篇内容在单张目标高度内完全容纳，直接保持单张标准黄金比例卡片
+  // 预判整篇总高：若单页即可完整容纳，直接保持单张卡片
+  const totalContentHeight = flowItems.reduce((acc, it) => acc + measureFlowItem(it), 0);
   if (totalContentHeight <= firstPageCapacity) {
+    document.body.removeChild(measureHost);
     formatPagedCard(fullCard);
     return [fullCard];
   }
 
-  // 3. 超出单页容量时，计算目标页数并按块边界安全断页
-  const targetPages = Math.max(2, Math.ceil((totalContentHeight + titleH) / pageCapacity));
-  const avgTargetCapacity = (totalContentHeight + titleH) / targetPages;
-
-  const pageGroups: HTMLElement[][] = [];
-  let currentGroup: HTMLElement[] = [];
+  // 4. 行驱动充盈贪心排版引擎（消除底部大面积悬空）
+  const pageGroups: FlowItem[][] = [];
+  let currentPageItems: FlowItem[] = [];
   let currentHeight = 0;
 
-  for (let i = 0; i < children.length; i++) {
-    const child = children[i];
-    const blockH = blockHeights[i];
+  const queue: FlowItem[] = [...flowItems];
+
+  while (queue.length > 0) {
+    const item = queue.shift()!;
     const isFirst = pageGroups.length === 0;
     const maxLimit = isFirst ? firstPageCapacity : pageCapacity;
-    const remainingPages = targetPages - pageGroups.length;
+    const itemH = measureFlowItem(item);
 
-    // 若已经达到最后一页，剩余所有块全部归入当前页
-    if (remainingPages <= 1) {
-      currentGroup.push(child);
-      currentHeight += blockH;
+    // 4.1 当前项能直接放入本页
+    if (currentHeight + itemH <= maxLimit) {
+      currentPageItems.push(item);
+      currentHeight += itemH;
       continue;
     }
 
-    // 软阈值（尽量均摊）：若已接近均摊期望且后面块足够，或超过当前页硬上限
-    const softLimit = isFirst ? Math.max(150, avgTargetCapacity - titleH) : avgTargetCapacity;
-    const exceedsHardLimit = currentGroup.length > 0 && currentHeight + blockH > maxLimit;
-    const reachesSoftLimit = currentGroup.length > 0 && currentHeight + blockH >= softLimit && (children.length - i) >= remainingPages;
+    // 4.2 放不下时，尝试行级拆分段落
+    const remainingSpace = maxLimit - currentHeight;
+    if (item.type === 'block' && item.element.tagName.toLowerCase() === 'p') {
+      const splitRes = trySplitParagraph(item.element, remainingSpace);
+      if (splitRes) {
+        currentPageItems.push({ type: 'block', element: splitRes.fitPart });
+        queue.unshift({ type: 'block', element: splitRes.remainPart });
 
-    if (exceedsHardLimit || (reachesSoftLimit && currentHeight >= softLimit * 0.85)) {
-      pageGroups.push(currentGroup);
-      currentGroup = [child];
-      currentHeight = blockH;
+        pageGroups.push(currentPageItems);
+        currentPageItems = [];
+        currentHeight = 0;
+        continue;
+      }
+    }
+
+    // 4.3 无法拆分或剩余空间不足
+    if (currentPageItems.length > 0) {
+      // 孤行标题/冒号引言保护：避免小标题独自孤悬在页面最底端
+      const last = currentPageItems[currentPageItems.length - 1];
+      if (isIntroOrHeading(last.element) && currentPageItems.length > 1) {
+        const orphan = currentPageItems.pop()!;
+        queue.unshift(item);
+        queue.unshift(orphan);
+        pageGroups.push(currentPageItems);
+        currentPageItems = [];
+        currentHeight = 0;
+        continue;
+      }
+
+      queue.unshift(item);
+      pageGroups.push(currentPageItems);
+      currentPageItems = [];
+      currentHeight = 0;
     } else {
-      currentGroup.push(child);
-      currentHeight += blockH;
+      // 单项本身极高（如特大图表或代码块），本页为空时强制承接
+      currentPageItems.push(item);
+      pageGroups.push(currentPageItems);
+      currentPageItems = [];
+      currentHeight = 0;
     }
   }
 
-  if (currentGroup.length > 0) {
-    pageGroups.push(currentGroup);
+  if (currentPageItems.length > 0) {
+    pageGroups.push(currentPageItems);
   }
 
-  // 清理各切片页首尾无意义的孤悬水平分割线
+  document.body.removeChild(measureHost);
+
+  // 5. 清理各页首尾无意义的孤悬分割线
   for (const group of pageGroups) {
-    while (group.length > 0 && group[group.length - 1].tagName.toLowerCase() === 'hr') {
+    while (
+      group.length > 0 &&
+      group[group.length - 1].type === 'block' &&
+      group[group.length - 1].element.tagName.toLowerCase() === 'hr'
+    ) {
       group.pop();
     }
-    while (group.length > 0 && group[0].tagName.toLowerCase() === 'hr') {
+    while (
+      group.length > 0 &&
+      group[0].type === 'block' &&
+      group[0].element.tagName.toLowerCase() === 'hr'
+    ) {
       group.shift();
     }
   }
@@ -424,6 +559,36 @@ export async function buildCardPages(
     formatPagedCard(fullCard);
     return [fullCard];
   }
+
+  // 6. 装配各切片页 DOM
+  const appendItemsToBody = (body: HTMLElement, items: FlowItem[]) => {
+    let currentList: { tag: 'ul' | 'ol'; listClass: string; el: HTMLElement } | null = null;
+
+    for (const item of items) {
+      if (item.type === 'list-item') {
+        if (
+          !currentList ||
+          currentList.tag !== item.listTag ||
+          currentList.listClass !== item.listClass
+        ) {
+          currentList = {
+            tag: item.listTag,
+            listClass: item.listClass,
+            el: document.createElement(item.listTag),
+          };
+          if (item.listClass) currentList.el.className = item.listClass;
+          if (item.listTag === 'ol' && item.index > 1) {
+            currentList.el.setAttribute('start', String(item.index));
+          }
+          body.appendChild(currentList.el);
+        }
+        currentList.el.appendChild(item.element.cloneNode(true));
+      } else {
+        currentList = null;
+        body.appendChild(item.element.cloneNode(true));
+      }
+    }
+  };
 
   const totalPages = pageGroups.length;
   const resultCards: HTMLElement[] = [];
@@ -441,9 +606,7 @@ export async function buildCardPages(
     }
 
     const body = createBodyContainer(cfg);
-    for (const child of pageGroups[i]) {
-      body.appendChild(child.cloneNode(true));
-    }
+    appendItemsToBody(body, pageGroups[i]);
     card.appendChild(body);
 
     if (cfg.showWatermark && cfg.watermarkText) {
