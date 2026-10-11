@@ -12,7 +12,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { renderElementToImageData, downloadDataUrl } from '../utils/exportImage';
-import { CardConfig } from '../types';
+import { CardConfig, RenderMode } from '../types';
 import { InkrollCore } from '@inkroll/core';
 
 interface ExportModalProps {
@@ -21,6 +21,7 @@ interface ExportModalProps {
   onClose: () => void;
   content: string;
   config: CardConfig;
+  renderMode?: RenderMode;
 }
 
 export const ExportModal: React.FC<ExportModalProps> = ({
@@ -29,6 +30,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   content,
   config,
+  renderMode,
 }) => {
   const [exportMode, setExportMode] = useState<'single' | 'social-multi'>('single');
   const [scale, setScale] = useState<number>(3); // Default 3x Retina
@@ -36,6 +38,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
+
+  // 当弹窗打开时，若当前处于分页卡片模式，自动进入多图导出
+  useEffect(() => {
+    if (isOpen) {
+      setExportMode(renderMode === 'paged' ? 'social-multi' : 'single');
+    }
+  }, [isOpen, renderMode]);
 
   // 社交多图切片状态
   const [multiImages, setMultiImages] = useState<string[]>([]);
@@ -196,7 +205,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             }`}
           >
             <ImageIcon className="w-3.5 h-3.5" />
-            <span>单张长图 (完整版)</span>
+            <span>长图模式</span>
           </button>
 
           <button
@@ -208,7 +217,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>社交多图 (小红书/微博)</span>
+            <span>分页卡片 (3:4 小红书)</span>
           </button>
         </div>
 
@@ -347,12 +356,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 ) : downloadSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-green-600" />
-                    <span>切片已下载</span>
+                    <span>卡片已下载</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4 text-neutral-600" />
-                    <span>保存全部切片 ({multiImages.length} 张)</span>
+                    <span>保存全部卡片 ({multiImages.length} 张)</span>
                   </>
                 )}
               </button>

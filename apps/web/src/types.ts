@@ -2,6 +2,7 @@ import type { CardConfig as CoreCardConfig, ThemeStyle } from '@inkroll/core';
 
 export type { ThemeStyle };
 export type FontStyle = 'sans' | 'serif' | 'mono';
+export type RenderMode = 'continuous' | 'paged';
 
 export interface CardConfig extends CoreCardConfig {
   showRoleBadges: boolean;

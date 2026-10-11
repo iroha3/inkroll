@@ -7,14 +7,19 @@ import {
   ZoomOut,
   Maximize2,
   Columns,
-  Eye,
+  Layers,
+  AlignJustify,
 } from 'lucide-react';
+import { RenderMode } from '../types';
 
 interface NavbarProps {
   onExportClick: () => void;
   onAboutClick: () => void;
   viewMode: 'split' | 'preview-only' | 'editor-only';
   setViewMode: (mode: 'split' | 'preview-only' | 'editor-only') => void;
+  renderMode: RenderMode;
+  setRenderMode: (mode: RenderMode) => void;
+  pageCount: number;
   zoomLevel: number;
   setZoomLevel: (zoom: number | ((prev: number) => number)) => void;
   showSettings: boolean;
@@ -26,6 +31,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onAboutClick,
   viewMode,
   setViewMode,
+  renderMode,
+  setRenderMode,
+  pageCount,
   zoomLevel,
   setZoomLevel,
   showSettings,
@@ -55,61 +63,87 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
 
-      {/* Middle: View Mode Controls & Zoom */}
-      <div className="hidden md:flex items-center gap-2 bg-neutral-100/80 p-1 rounded-xl border border-neutral-200/60">
-        <button
-          onClick={() => setViewMode('split')}
-          className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-            viewMode === 'split' ? 'bg-white text-black shadow-sm font-semibold' : 'text-neutral-600 hover:text-black'
-          }`}
-          title="双栏：编辑器 + 实时长图"
-        >
-          <Columns className="w-3.5 h-3.5" />
-          <span>分栏模式</span>
-        </button>
-
-        <button
-          onClick={() => setViewMode('preview-only')}
-          className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-            viewMode === 'preview-only' ? 'bg-white text-black shadow-sm font-semibold' : 'text-neutral-600 hover:text-black'
-          }`}
-          title="纯渲染预览"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          <span>长图预览</span>
-        </button>
-
-        <div className="w-[1px] h-4 bg-neutral-200 mx-1" />
-
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-1 text-xs text-neutral-600">
+      {/* Middle: Render Mode (Continuous vs 3:4 Paged) & Layout / Zoom Controls */}
+      <div className="flex items-center gap-2">
+        {/* 形态分段选择器：卷轴长图 vs 3:4 分页 (小红书社交场景) */}
+        <div className="flex items-center gap-0.5 bg-neutral-100/90 p-0.5 rounded-xl border border-neutral-200/70">
           <button
-            onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.1))}
-            className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
-            title="缩小预览"
+            onClick={() => setRenderMode('continuous')}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'continuous'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="卷轴长图模式：单张连贯长图"
           >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-
-          <span className="font-mono text-[11px] w-9 text-center font-medium">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-
-          <button
-            onClick={() => setZoomLevel((z) => Math.min(1.5, z + 0.1))}
-            className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
-            title="放大预览"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
+            <AlignJustify className="w-3.5 h-3.5" />
+            <span>长图模式</span>
           </button>
 
           <button
-            onClick={() => setZoomLevel(1)}
-            className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
-            title="重置 100%"
+            onClick={() => setRenderMode('paged')}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'paged'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="小红书 / 社交媒体 3:4 黄金比例分页卡片"
           >
-            <Maximize2 className="w-3 h-3" />
+            <Layers className="w-3.5 h-3.5" />
+            <span>分页卡片 (3:4)</span>
+            {renderMode === 'paged' && pageCount > 1 && (
+              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
+                {pageCount}P
+              </span>
+            )}
           </button>
+        </div>
+
+        {/* 辅助工具：分栏模式切换与画布缩放 */}
+        <div className="hidden lg:flex items-center gap-1 bg-neutral-100/80 p-0.5 rounded-xl border border-neutral-200/60">
+          <button
+            onClick={() => setViewMode(viewMode === 'split' ? 'preview-only' : 'split')}
+            className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all cursor-pointer ${
+              viewMode === 'split' ? 'bg-white text-black shadow-xs font-semibold' : 'text-neutral-600 hover:text-black'
+            }`}
+            title={viewMode === 'split' ? '当前：双栏模式（点击切换纯预览）' : '当前：纯预览（点击恢复双栏）'}
+          >
+            <Columns className="w-3.5 h-3.5" />
+            <span>{viewMode === 'split' ? '分栏' : '单栏'}</span>
+          </button>
+
+          <div className="w-[1px] h-3.5 bg-neutral-200 mx-0.5" />
+
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-0.5 text-xs text-neutral-600 px-0.5">
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.1))}
+              className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
+              title="缩小预览"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+
+            <span className="font-mono text-[11px] w-8 text-center font-medium">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(1.5, z + 0.1))}
+              className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
+              title="放大预览"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setZoomLevel(1)}
+              className="p-1 hover:bg-neutral-200 rounded text-neutral-600 transition-colors cursor-pointer"
+              title="重置 100%"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -133,10 +167,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           onClick={onExportClick}
           className="flex items-center gap-1.5 text-xs font-semibold bg-black hover:bg-neutral-800 text-white px-3.5 py-1.5 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
-          title="导出长图"
+          title={renderMode === 'paged' ? `批量导出 ${pageCount} 张 3:4 社交卡片` : '导出单张长图'}
         >
           <Download className="w-3.5 h-3.5" />
-          <span>导出</span>
+          <span>{renderMode === 'paged' && pageCount > 1 ? `导出 (${pageCount}张)` : '导出'}</span>
         </button>
       </div>
     </header>

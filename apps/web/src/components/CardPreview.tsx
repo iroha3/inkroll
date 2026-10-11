@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { CardConfig } from '../types';
+import { CardConfig, RenderMode } from '../types';
 import { InkrollCore } from '@inkroll/core';
 import mermaid from 'mermaid';
 
@@ -8,6 +8,8 @@ interface CardPreviewProps {
   config: CardConfig;
   cardRef: React.RefObject<HTMLDivElement | null>;
   zoomLevel: number;
+  renderMode: RenderMode;
+  onPageCountChange?: (count: number) => void;
 }
 
 export const CardPreview: React.FC<CardPreviewProps> = ({
@@ -15,6 +17,8 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   config,
   cardRef,
   zoomLevel,
+  renderMode,
+  onPageCountChange,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -29,7 +33,7 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
 
   useEffect(() => {
     if (!hostRef.current) return;
-    hostRef.current.innerHTML = '';
+    let cancelled = false;
 
     const mermaidRenderer = async (code: string) => {
       const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
@@ -37,13 +41,65 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
       return svg;
     };
 
-    const card = InkrollCore.render(content, config, { mermaidRenderer });
-    hostRef.current.appendChild(card);
+    const renderCanvas = async () => {
+      if (renderMode === 'paged') {
+        try {
+          const pages = await InkrollCore.buildPages(content, config, { mermaidRenderer });
+          if (cancelled || !hostRef.current) return;
 
-    if (cardRef) {
-      (cardRef as any).current = card;
-    }
-  }, [content, config, cardRef]);
+          hostRef.current.innerHTML = '';
+          const container = document.createElement('div');
+          container.className = 'flex flex-col items-center gap-8 py-2';
+
+          pages.forEach((pageEl, idx) => {
+            const pageWrapper = document.createElement('div');
+            pageWrapper.className = 'flex flex-col items-center group relative';
+
+            // 优雅的卡片页眉指示条（3:4 规格与当前页码）
+            const badge = document.createElement('div');
+            badge.className =
+              'w-full flex items-center justify-between text-[11px] font-mono text-neutral-400 select-none mb-2.5 px-1';
+            badge.innerHTML = `
+              <span class="inline-flex items-center gap-1.5 font-semibold text-neutral-700 bg-black/[0.06] px-2.5 py-0.5 rounded-full shadow-xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                P.${String(idx + 1).padStart(2, '0')} / ${String(pages.length).padStart(2, '0')}
+              </span>
+              <span class="text-[10px] font-medium tracking-wide text-neutral-400">
+                3:4 社交规格
+              </span>
+            `;
+
+            pageWrapper.appendChild(badge);
+            pageWrapper.appendChild(pageEl);
+            container.appendChild(pageWrapper);
+          });
+
+          hostRef.current.appendChild(container);
+
+          if (cardRef) {
+            (cardRef as any).current = pages[0] || null;
+          }
+          onPageCountChange?.(pages.length);
+        } catch (err) {
+          console.error('Failed to build pages:', err);
+        }
+      } else {
+        hostRef.current.innerHTML = '';
+        const card = InkrollCore.render(content, config, { mermaidRenderer });
+        hostRef.current.appendChild(card);
+        if (cardRef) {
+          (cardRef as any).current = card;
+        }
+        onPageCountChange?.(1);
+      }
+    };
+
+    void renderCanvas();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content, config, renderMode, cardRef, onPageCountChange]);
 
   const getCanvasBgClass = () => {
     switch (config.canvasBg) {
@@ -64,13 +120,15 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   return (
     <div
       ref={scrollRef}
-      className={`w-full h-full min-h-[500px] flex items-center justify-center p-6 md:p-10 overflow-auto overscroll-contain transition-colors duration-200 ${getCanvasBgClass()}`}
+      className={`w-full h-full overflow-auto overscroll-contain transition-colors duration-200 ${getCanvasBgClass()}`}
     >
-      <div
-        style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
-        className="transition-transform duration-200 my-auto py-4"
-      >
-        <div ref={hostRef} className="box-border" />
+      <div className="min-w-full min-h-full flex flex-col items-center justify-center p-6 md:p-10">
+        <div
+          style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top center' }}
+          className="transition-transform duration-200 my-auto py-2"
+        >
+          <div ref={hostRef} className="box-border" />
+        </div>
       </div>
     </div>
   );

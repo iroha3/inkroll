@@ -5,7 +5,7 @@ import { CardPreview } from './components/CardPreview';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ExportModal } from './components/ExportModal';
 import { AboutModal } from './components/AboutModal';
-import { CardConfig } from './types';
+import { CardConfig, RenderMode } from './types';
 
 // localStorage keys for auto-save persistence
 const CONTENT_STORAGE_KEY = 'md-card-content';
@@ -74,6 +74,8 @@ export default function App() {
   });
 
   const [viewMode, setViewMode] = useState<'split' | 'preview-only' | 'editor-only'>('split');
+  const [renderMode, setRenderMode] = useState<RenderMode>('continuous');
+  const [pageCount, setPageCount] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [showSettings, setShowSettings] = useState<boolean>(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
@@ -167,6 +169,9 @@ export default function App() {
         onAboutClick={() => setIsAboutModalOpen(true)}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        renderMode={renderMode}
+        setRenderMode={setRenderMode}
+        pageCount={pageCount}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
         showSettings={showSettings}
@@ -203,6 +208,8 @@ export default function App() {
               config={config}
               cardRef={cardRef}
               zoomLevel={zoomLevel}
+              renderMode={renderMode}
+              onPageCountChange={setPageCount}
             />
           </div>
         )}
@@ -226,6 +233,7 @@ export default function App() {
         onClose={() => setIsExportModalOpen(false)}
         content={content}
         config={config}
+        renderMode={renderMode}
       />
 
       {/* 关于与致敬浮窗 */}
