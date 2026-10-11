@@ -5,11 +5,13 @@ import { CardPreview } from './components/CardPreview';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ExportModal } from './components/ExportModal';
 import { AboutModal } from './components/AboutModal';
-import { CardConfig, RenderMode } from './types';
+import { CardConfig, RenderMode, ScenePreset } from './types';
 
 // localStorage keys for auto-save persistence
 const CONTENT_STORAGE_KEY = 'md-card-content';
 const CONFIG_STORAGE_KEY = 'md-card-config';
+const RENDER_MODE_STORAGE_KEY = 'md-card-render-mode';
+const SCENE_STORAGE_KEY = 'md-card-scene';
 
 // 默认卡片内容：极简生活法则金句
 export const DEFAULT_CARD_MARKDOWN = `# 📖 极简生活法则
@@ -28,7 +30,7 @@ export const DEFAULT_CARD_MARKDOWN = `# 📖 极简生活法则
 
 ==真正的自由，是拥有拒绝的权利。==`;
 
-// 默认卡片排版配置：默认即是纯正的“松墨黛绿 (Kami Paper) + 衬线体”
+// 默认卡片排版配置：纯白 + 黑体 (Sans)
 const DEFAULT_CONFIG: CardConfig = {
   showTitle: false,
   titleText: '',
@@ -40,10 +42,10 @@ const DEFAULT_CONFIG: CardConfig = {
   cardWidth: 460,
   padding: 'spacious',
   borderRadius: 12,
-  theme: 'kami-paper', // 松墨黛绿
+  theme: 'classic-white', // 纯白
   customBgColor: '',
   customTextColor: '',
-  fontFamily: 'serif', // 优雅衬线印刷体
+  fontFamily: 'sans', // 现代无衬线黑体
   fontSize: 'base',
   lineHeight: 'relaxed',
   showWatermark: true,
@@ -65,17 +67,32 @@ export default function App() {
     }
   });
 
+  const [renderMode, setRenderMode] = useState<RenderMode>(() => {
+    try {
+      const saved = localStorage.getItem(RENDER_MODE_STORAGE_KEY);
+      if (saved === 'continuous' || saved === 'paged') return saved;
+    } catch {
+      /* ignore */
+    }
+    return 'paged';
+  });
+
   const [config, setConfig] = useState<CardConfig>(() => {
     try {
       const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-      return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+      const parsed = saved ? JSON.parse(saved) : {};
+      const savedScene = localStorage.getItem(SCENE_STORAGE_KEY) as ScenePreset | null;
+      return {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        scene: savedScene || parsed.scene || DEFAULT_CONFIG.scene || 'xiaohongshu',
+      };
     } catch {
       return DEFAULT_CONFIG;
     }
   });
 
   const [viewMode, setViewMode] = useState<'split' | 'preview-only' | 'editor-only'>('split');
-  const [renderMode, setRenderMode] = useState<RenderMode>('paged');
   const [pageCount, setPageCount] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [showSettings, setShowSettings] = useState<boolean>(true);
@@ -138,8 +155,8 @@ export default function App() {
     updateContent(DEFAULT_CARD_MARKDOWN);
     setConfig((prev) => ({
       ...prev,
-      theme: 'kami-paper',
-      fontFamily: 'serif',
+      theme: 'classic-white',
+      fontFamily: 'sans',
       cardWidth: 460,
       padding: 'spacious',
     }));
@@ -156,7 +173,18 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem(RENDER_MODE_STORAGE_KEY, renderMode);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [renderMode]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+      if (config.scene) {
+        localStorage.setItem(SCENE_STORAGE_KEY, config.scene);
+      }
     } catch {
       /* storage unavailable */
     }
@@ -168,11 +196,22 @@ export default function App() {
     setConfig((prev) => ({ ...prev, scene: newScene }));
     setRenderMode('paged');
     setResetScrollTrigger((prev) => prev + 1);
+    try {
+      localStorage.setItem(SCENE_STORAGE_KEY, newScene);
+      localStorage.setItem(RENDER_MODE_STORAGE_KEY, 'paged');
+    } catch {
+      /* storage unavailable */
+    }
   };
 
   const handleSelectRenderMode = (mode: RenderMode) => {
     setRenderMode(mode);
     setResetScrollTrigger((prev) => prev + 1);
+    try {
+      localStorage.setItem(RENDER_MODE_STORAGE_KEY, mode);
+    } catch {
+      /* storage unavailable */
+    }
   };
 
   return (

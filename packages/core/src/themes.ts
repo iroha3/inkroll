@@ -169,6 +169,7 @@ export const DEFAULT_CONFIG: CardConfig = {
   exportFormat: 'png',
   customBgColor: '',
   customTextColor: '',
+  scene: 'xiaohongshu',
 };
 
 export function normalizeConfig(options?: InkrollOptions): CardConfig {
@@ -194,6 +195,7 @@ export function normalizeConfig(options?: InkrollOptions): CardConfig {
   if (options.format) cfg.exportFormat = options.format;
   if (options.customBgColor !== undefined) cfg.customBgColor = options.customBgColor;
   if (options.customTextColor !== undefined) cfg.customTextColor = options.customTextColor;
+  if (options.scene) cfg.scene = options.scene;
 
   return cfg;
 }
