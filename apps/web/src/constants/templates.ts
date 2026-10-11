@@ -232,6 +232,7 @@ const [error, submitAction, isPending] = useActionState(
       cardWidth: 460,
       padding: 'spacious',
       theme: 'kami-paper',
+      fontFamily: 'serif',
       showWatermark: true,
       watermarkText: 'By InkRoll',
     },

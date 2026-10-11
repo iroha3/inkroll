@@ -1,6 +1,7 @@
 {
   "name": "@inkroll/core",
   "version": "1.0.0",
+  "license": "MPL-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

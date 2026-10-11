@@ -75,3 +75,15 @@ bun run build:all
 | **`apps/web`** | 交互表现层 | 依赖 `@inkroll/core` | 静态 Web 站点（可部署至 GitHub/Cloudflare Pages） |
 | **`apps/lite`** | 引擎调试器 | 依赖 `@inkroll/core` | 调试工具静态页 |
 | **`apps/userscripts`** | 宿主注入层 | 依赖 `@inkroll/core` | 自包含用户脚本（可发布至 Greasyfork） |
+
+---
+
+## 📄 开源许可证与分包授权协议
+
+本项目采用**分包差异化许可（Split Licensing）**策略：
+
+* **核心引擎 ([`packages/core`](./packages/core))**：基于 **[MPL-2.0](https://www.mozilla.org/en-US/MPL/2.0/) (Mozilla Public License 2.0)** 许可开源。
+  * 具备文件级弱传染性（Weak Copyleft）：任何对 `core` 内部源码的直接修改与优化**必须向社区开源回馈**。
+  * 允许私有/闭源软件以模块依赖形式自由引入调用，宿主业务代码不会被传染。
+* **应用终端 ([`apps/*`](./apps))**：基于 **[AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (GNU Affero General Public License v3.0)** 许可开源。
+  * 包含完整的 Web 站点界面与油猴下游脚本，严防未授权的云端服务化套壳与商业白嫖。

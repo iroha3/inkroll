@@ -10,7 +10,7 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 .md-font-serif {
-  font-family: ui-serif, "Source Serif Pro", Georgia, Cambria, "Songti SC", "SimSun", "Times New Roman", Times, serif;
+  font-family: "Charter", "Palatino Linotype", Palatino, Georgia, Cambria, "Source Han Serif SC", "Noto Serif SC", "Songti SC", "SimSun", ui-serif, "Source Serif Pro", "Times New Roman", Times, serif;
 }
 .md-font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
@@ -30,12 +30,12 @@
 .inkroll-card .md-body > * + *, .md-body > * + * { margin-top: 12px; }
 
 /* 标题 */
-.inkroll-card .md-body h1, .md-body h1 { font-size: 22px; font-weight: 700; margin: 24px 0 12px; letter-spacing: -0.025em; border-bottom: 1px solid var(--md-border); padding-bottom: 8px; }
-.inkroll-card .md-body h2, .md-body h2 { font-size: 18px; font-weight: 700; margin: 20px 0 10px; letter-spacing: -0.025em; }
-.inkroll-card .md-body h3, .md-body h3 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; }
-.inkroll-card .md-body h4, .md-body h4 { font-size: 14.5px; font-weight: 700; margin: 12px 0 6px; }
-.inkroll-card .md-body h5, .md-body h5 { font-size: 13.5px; font-weight: 700; margin: 10px 0 4px; }
-.inkroll-card .md-body h6, .md-body h6 { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+.inkroll-card .md-body h1, .md-body h1 { font-size: 22px; font-weight: var(--md-heading-weight, 700); margin: 24px 0 12px; letter-spacing: -0.025em; border-bottom: 1px solid var(--md-border); padding-bottom: 8px; }
+.inkroll-card .md-body h2, .md-body h2 { font-size: 18px; font-weight: var(--md-heading-weight, 700); margin: 20px 0 10px; letter-spacing: -0.025em; }
+.inkroll-card .md-body h3, .md-body h3 { font-size: 16px; font-weight: var(--md-heading-weight, 700); margin: 16px 0 8px; }
+.inkroll-card .md-body h4, .md-body h4 { font-size: 14.5px; font-weight: var(--md-heading-weight, 700); margin: 12px 0 6px; }
+.inkroll-card .md-body h5, .md-body h5 { font-size: 13.5px; font-weight: var(--md-heading-weight, 700); margin: 10px 0 4px; }
+.inkroll-card .md-body h6, .md-body h6 { font-size: 13px; font-weight: var(--md-heading-weight, 700); margin: 8px 0 4px; }
 
 /* 段落与分割线：强制继承字号，彻底避免宿主页面（如 Google AI Studio）的 p { font-size: 13px } 污染导致正文缩水 */
 .inkroll-card .md-body p,
@@ -110,8 +110,8 @@
 }
 .inkroll-card .md-body li.task-list-item input[type="checkbox"]:checked,
 .md-body li.task-list-item input[type="checkbox"]:checked {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: var(--md-accent, #2563eb);
+  border-color: var(--md-accent, #2563eb);
 }
 .inkroll-card .md-body li.task-list-item input[type="checkbox"]:checked::after,
 .md-body li.task-list-item input[type="checkbox"]:checked::after {
@@ -243,7 +243,12 @@
 
 /* 高亮 ==text== */
 .inkroll-card .md-body mark.highlight-text,
-.md-body mark.highlight-text { background-color: rgba(254, 240, 138, 0.9); color: #111827; padding: 2px 5px; border-radius: 3px; }
+.md-body mark.highlight-text {
+  background-color: var(--md-highlight-bg, rgba(254, 240, 138, 0.9));
+  color: var(--md-highlight-text, #111827);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
 
 /* 脚注 */
 .inkroll-card .md-body section[data-footnotes] h2,

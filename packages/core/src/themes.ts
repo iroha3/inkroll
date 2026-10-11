@@ -52,6 +52,10 @@ export const THEMES: Record<ThemeStyle, ThemeColors> = {
 };
 
 export const LIGHT_VARS: ThemeVars = {
+  '--md-accent': '#2563eb',
+  '--md-heading-weight': '700',
+  '--md-highlight-bg': 'rgba(254, 240, 138, 0.9)',
+  '--md-highlight-text': '#111827',
   '--md-border': '#e5e7eb',
   '--md-code-bg': '#f4f4f5',
   '--md-code-border': '#e5e7eb',
@@ -66,6 +70,10 @@ export const LIGHT_VARS: ThemeVars = {
 };
 
 export const FOREST_VARS: ThemeVars = {
+  '--md-accent': '#1b4d3e',
+  '--md-heading-weight': '700',
+  '--md-highlight-bg': 'rgba(214, 203, 176, 0.6)',
+  '--md-highlight-text': '#1b382b',
   '--md-border': '#e0dbd1',
   '--md-code-bg': '#ebe4d3',
   '--md-code-border': '#e0dbd1',
@@ -80,6 +88,10 @@ export const FOREST_VARS: ThemeVars = {
 };
 
 export const KAMI_VARS: ThemeVars = {
+  '--md-accent': '#1b365d',
+  '--md-heading-weight': '600',
+  '--md-highlight-bg': 'rgba(27, 54, 93, 0.1)',
+  '--md-highlight-text': '#1b365d',
   '--md-border': '#e8e6dc',
   '--md-code-bg': '#f0eee6',
   '--md-code-border': '#e8e6dc',
@@ -94,6 +106,10 @@ export const KAMI_VARS: ThemeVars = {
 };
 
 export const DARK_VARS: ThemeVars = {
+  '--md-accent': '#58a6ff',
+  '--md-heading-weight': '700',
+  '--md-highlight-bg': 'rgba(56, 139, 253, 0.25)',
+  '--md-highlight-text': '#e6edf3',
   '--md-border': '#30363d',
   '--md-code-bg': '#161b22',
   '--md-code-border': '#30363d',
@@ -108,6 +124,10 @@ export const DARK_VARS: ThemeVars = {
 };
 
 export const EMERALD_VARS: ThemeVars = {
+  '--md-accent': '#45c9a8',
+  '--md-heading-weight': '700',
+  '--md-highlight-bg': 'rgba(69, 201, 168, 0.2)',
+  '--md-highlight-text': '#d8e6e0',
   '--md-border': '#26362f',
   '--md-code-bg': '#152019',
   '--md-code-border': '#26362f',
