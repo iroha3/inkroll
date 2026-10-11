@@ -5,7 +5,32 @@
    - 彻底防范宿主环境（如 Google AI Studio、Qwen 等）全局样式污染
    ============================================================ */
 
-/* 字体体系：提供显式现代跨平台无衬线、衬线与等宽字体回退列表，防止 SVG 沙箱光栅化时回退至宋体 */
+/* 字体体系：精准字重映射，杜绝浏览器算法合成粗体（Faux Bold）导致的笔画模糊变形 */
+@font-face {
+  font-family: "TsangerJinKai02";
+  src: local("TsangerJinKai02 W04"), local("TsangerJinKai02-W04"), local("仓耳今楷02 W04"), local("TsangerJinKai02");
+  font-weight: 100 450;
+  font-style: normal;
+}
+@font-face {
+  font-family: "TsangerJinKai02";
+  src: local("TsangerJinKai02 W05"), local("TsangerJinKai02-W05"), local("仓耳今楷02 W05");
+  font-weight: 451 900;
+  font-style: normal;
+}
+@font-face {
+  font-family: "LXGW WenKai";
+  src: local("LXGW WenKai"), local("霞鹜文楷");
+  font-weight: 100 450;
+  font-style: normal;
+}
+@font-face {
+  font-family: "LXGW WenKai";
+  src: local("LXGW WenKai Bold"), local("霞鹜文楷 Bold"), local("LXGW WenKai Screen");
+  font-weight: 451 900;
+  font-style: normal;
+}
+
 .md-font-sans {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   font-weight: 400;
@@ -14,17 +39,32 @@
   text-rendering: optimizeLegibility;
 }
 .md-font-serif {
-  font-family: "Charter", "TsangerJinKai02", "TsangerJinKai02-W04", "LXGW WenKai", "霞鹜文楷", "Palatino Linotype", Palatino, Georgia, Cambria, "Source Han Serif SC", "思源宋体", "Noto Serif SC", "Songti SC", "SimSun", ui-serif, "Source Serif Pro", "Times New Roman", Times, serif;
+  font-family: "Charter", "TsangerJinKai02", "TsangerJinKai02 W04", "LXGW WenKai", "霞鹜文楷", "Palatino Linotype", Palatino, Georgia, Cambria, "Source Han Serif SC", "思源宋体", "Noto Serif SC", "Songti SC", "SimSun", ui-serif, "Source Serif Pro", "Times New Roman", Times, serif;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-synthesis: none;
 }
 .md-font-mono {
   font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Monaco, Consolas, "Cascadia Mono", "Liberation Mono", "Courier New", monospace;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 衬线字体的加粗与标题：克制采用 600（精准命中 W05），杜绝 700 暴力假粗体 */
+.md-font-serif strong,
+.md-font-serif b {
+  font-weight: 600;
+}
+.md-font-serif h1,
+.md-font-serif h2,
+.md-font-serif h3,
+.md-font-serif h4,
+.md-font-serif h5,
+.md-font-serif h6 {
+  font-weight: var(--md-heading-weight, 600);
 }
 
 /* 正文基础：统一基准 15px，绝对像素间距防宿主 rem 缩放污染，强制抗锯齿统一渲染粗细 */
