@@ -3,7 +3,7 @@
 # 墨卷 · InkRoll
 
 <p align="center">
-  <strong>墨下生花，一卷成图 —— 专为优雅阅读而生的 Markdown 卡片与长图排版工具</strong>
+  <strong>墨下生花，一卷成图</strong>
 </p>
 
 <p align="center">
@@ -11,6 +11,18 @@
   <a href="https://bun.sh"><img src="https://img.shields.io/badge/Runtime-Bun-black.svg?style=flat-square&logo=bun" alt="Bun" /></a>
   <a href="https://react.dev"><img src="https://img.shields.io/badge/UI-React_19-61DAFB.svg?style=flat-square&logo=react" alt="React 19" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.8-3178C6.svg?style=flat-square&logo=typescript" alt="TypeScript" /></a>
+</p>
+
+<p align="center">
+  <a href="https://iroha3.github.io/inkroll/"><strong>✨ 在线使用网页版</strong></a>
+</p>
+
+<p align="center">
+  <img src="./docs/hero.png" alt="墨卷 InkRoll 界面演示" width="100%" />
+</p>
+
+<p align="center">
+  <sub>专为优雅阅读而生的 Markdown 卡片与长图排版工具</sub>
 </p>
 
 </div>
@@ -28,21 +40,22 @@
 ## 核心特性
 
 | 特性 | 说明 |
+| :--- | :--- |
 | **超清长图导出** | 高精度光栅化渲染，3x 视网膜级超清 PNG 输出，支持一键复制到系统剪贴板。 |
 | **多场景画幅适配** | 内置小红书黄金图文、朋友圈与九宫格、幻灯片与宽屏、无限延展卷轴长图，契合主流平台画幅。 |
 | **全离线公式与图表** | 全离线 KaTeX 数学公式渲染 + Mermaid 流程图与时序图解析支持。 |
 | **纯本地离线隐私** | 解析与渲染均在浏览器本地完成，内容不上云，纯粹、安全且私密。 |
-| **克制精细的排版控制** | 支持实时调节字号、行距、内边距、圆角与主题，提供优雅的水印签名配置。 |
+| **精细的排版控制** | 支持实时调节字号、行距、内边距、圆角与主题，提供优雅的水印签名配置。 |
 
 ---
 
-## 精选排版主题
+## 排版主题
 
 墨卷内置针对不同阅读场景精细微调的 4 款主题：
 
 * **纯白**：极简干净、现代高可读性的通用纯白排版。
 * **黛绿**：深沉雅致的东方古典色调。
-* **柔蓝**：轻快明亮、适合现代年轻化内容传播。
+* **柔蓝**：轻快明亮、现代年轻化的颜色主题。
 * **暗黑**：专为夜间与代码块干货打造的深色视界。
 
 ---
