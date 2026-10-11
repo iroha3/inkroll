@@ -122,29 +122,6 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
               'flex flex-col items-center group relative shrink-0 snap-center transition-transform hover:-translate-y-1 duration-200';
             pageWrapper.setAttribute('data-page-index', String(idx + 1));
 
-            const sceneLabel =
-              config.scene === 'square'
-                ? '朋友圈 1:1 · 1242×1242'
-                : config.scene === 'slide'
-                ? '幻灯片 16:9 · 1920×1080'
-                : config.scene === 'story'
-                ? '竖屏海报 9:16 · 1080×1920'
-                : '小红书 3:4 · 1242×1660';
-
-            const badge = document.createElement('div');
-            badge.className =
-              'w-full flex items-center justify-between text-[11px] font-mono text-neutral-400 select-none mb-2.5 px-1';
-            badge.innerHTML = `
-              <span class="inline-flex items-center gap-1.5 font-semibold text-neutral-700 bg-black/[0.06] px-2.5 py-0.5 rounded-full shadow-xs">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                P.${String(idx + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}
-              </span>
-              <span class="text-[10px] font-medium tracking-wide text-neutral-400">
-                ${sceneLabel}
-              </span>
-            `;
-
-            pageWrapper.appendChild(badge);
             pageWrapper.appendChild(pageEl);
             container.appendChild(pageWrapper);
           });
