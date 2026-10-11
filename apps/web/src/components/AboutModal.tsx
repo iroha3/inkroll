@@ -14,7 +14,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-neutral-200/80 text-neutral-800 animate-in zoom-in-95 duration-150 select-none"
         onClick={(e) => e.stopPropagation()}
       >
@@ -46,24 +46,14 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* 开发者寄语与说明 */}
         <div className="py-4 space-y-3.5 text-[13px] leading-relaxed text-neutral-600">
           <p>
-            我们希望为你提供一块克制而温润的画布：不打扰思考，专注将 Markdown 随笔、读书笔记、公式与图表沉淀为优雅的图文卡片。
+            将 Markdown 随笔、读书笔记、公式与图表沉淀为优雅的图文卡片。
           </p>
-          <p className="text-neutral-500 text-xs">
-            所有排版与渲染均在浏览器本地完成，文字内容绝不上云，纯粹且私密。
+          <p>
+            推荐安装 <a href="https://github.com/tw93/Kami/tree/main/assets/fonts" target="_blank" rel="noreferrer" className="underline hover:text-black">「霞鹜文楷 / 思源宋体」</a>，以获得更佳的衬线字体排版效果。
           </p>
-
-          {/* 字体质感提示：明确路径与双击安装 */}
-          <div className="p-3 bg-neutral-50/80 rounded-xl border border-neutral-100 text-xs text-neutral-500 flex items-start gap-2.5">
-            <span className="text-neutral-400 shrink-0 select-none text-sm mt-[-1px]">💡</span>
-            <div>
-              <span className="text-neutral-800 font-medium">字体质感提示：</span>
-              推荐双击安装项目 <code className="bg-neutral-200/60 px-1 py-0.5 rounded text-[11px] font-mono text-neutral-700">kami/assets/fonts</code> 内的字体文件（或系统本地「霞鹜文楷 / 思源宋体」），排版引擎将自动优先调用，呈现最佳印刷级质感。
-            </div>
-          </div>
-
           <div className="flex items-center gap-1.5 text-xs text-neutral-400 pt-0.5">
             <Heart className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-            <span>致敬 <a href="https://github.com/tw93/kami" target="_blank" rel="noreferrer" className="underline hover:text-black">tw93/Kami</a> 的纸质克制排版</span>
+            <span>黛绿主题致敬 <a href="https://github.com/tw93/kami" target="_blank" rel="noreferrer" className="underline hover:text-black">tw93/Kami</a> 的纸质克制排版</span>
           </div>
         </div>
 
