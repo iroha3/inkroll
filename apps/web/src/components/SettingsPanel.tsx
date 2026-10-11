@@ -190,6 +190,45 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               </div>
             </div>
 
+            {/* 场景规格预设 */}
+            <div>
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1">
+                <span>社交场景规格</span>
+                <span className="font-mono text-[10px] text-neutral-500">
+                  {config.scene === 'square'
+                    ? '1242×1242 · 1:1'
+                    : config.scene === 'slide'
+                    ? '1920×1080 · 16:9'
+                    : config.scene === 'story'
+                    ? '1080×1920 · 9:16'
+                    : '1242×1660 · 3:4'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
+                {[
+                  { id: 'xiaohongshu', label: '小红书 (3:4)' },
+                  { id: 'square', label: '朋友圈 (1:1)' },
+                  { id: 'slide', label: '幻灯片 (16:9)' },
+                  { id: 'story', label: '竖屏海报 (9:16)' },
+                ].map((s) => {
+                  const isSelected = (!config.scene && s.id === 'xiaohongshu') || config.scene === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => updateConfig('scene', s.id as any)}
+                      className={`py-1.5 px-1.5 text-xs rounded-md transition-all cursor-pointer text-center ${
+                        isSelected
+                          ? 'bg-white shadow-xs font-semibold text-black'
+                          : 'text-neutral-600 hover:text-black'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Padding */}
             <div>
               <label className="block text-[11px] text-neutral-400 mb-1">卡片留白</label>

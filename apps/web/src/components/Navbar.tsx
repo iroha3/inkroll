@@ -87,10 +87,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="小红书 / 社交媒体 3:4 黄金比例分页卡片"
+            title="小红书 3:4 黄金图文规格 (1242×1660)"
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>分页卡片 (3:4)</span>
+            <span>小红书</span>
             {renderMode === 'paged' && pageCount > 1 && (
               <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
                 {pageCount}P

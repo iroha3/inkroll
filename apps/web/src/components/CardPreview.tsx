@@ -55,7 +55,15 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
             const pageWrapper = document.createElement('div');
             pageWrapper.className = 'flex flex-col items-center group relative';
 
-            // 优雅的卡片页眉指示条（3:4 规格与当前页码）
+            const sceneLabel =
+              config.scene === 'square'
+                ? '朋友圈 1:1 · 1242×1242'
+                : config.scene === 'slide'
+                ? '幻灯片 16:9 · 1920×1080'
+                : config.scene === 'story'
+                ? '竖屏海报 9:16 · 1080×1920'
+                : '小红书 3:4 · 1242×1660';
+
             const badge = document.createElement('div');
             badge.className =
               'w-full flex items-center justify-between text-[11px] font-mono text-neutral-400 select-none mb-2.5 px-1';
@@ -65,7 +73,7 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
                 P.${String(idx + 1).padStart(2, '0')} / ${String(pages.length).padStart(2, '0')}
               </span>
               <span class="text-[10px] font-medium tracking-wide text-neutral-400">
-                3:4 社交规格
+                ${sceneLabel}
               </span>
             `;
 

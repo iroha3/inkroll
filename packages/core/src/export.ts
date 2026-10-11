@@ -74,8 +74,15 @@ export async function exportElement(
   wrap.appendChild(clone);
   const xml = new XMLSerializer().serializeToString(wrap);
 
-  const width = element.offsetWidth || 500;
-  const height = element.offsetHeight || 300;
+  const targetW =
+    parseFloat(element.getAttribute('data-target-width') || '') || element.offsetWidth || 500;
+  const targetH =
+    parseFloat(element.getAttribute('data-target-height') || '') || element.offsetHeight || 300;
+  const exportW = parseFloat(element.getAttribute('data-export-width') || '');
+  const exportH = parseFloat(element.getAttribute('data-export-height') || '');
+
+  const width = targetW;
+  const height = targetH;
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"` +
@@ -93,8 +100,8 @@ export async function exportElement(
   });
 
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
+  canvas.width = Math.round(scale === 3 && exportW ? exportW : width * scale);
+  canvas.height = Math.round(scale === 3 && exportH ? exportH : height * scale);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('无法创建 Canvas 上下文');
 

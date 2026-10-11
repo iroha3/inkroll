@@ -217,7 +217,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>分页卡片 (3:4 小红书)</span>
+            <span>小红书卡片</span>
           </button>
         </div>
 
@@ -227,7 +227,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             {isSlicing ? (
               <div className="flex items-center justify-center py-6 gap-2 text-xs text-neutral-500">
                 <Sparkles className="w-4 h-4 animate-spin text-black" />
-                <span>正在计算段落块边界并智能分页…</span>
+                <span>正在以小红书标准画幅 (1242×1660) 智能分页…</span>
               </div>
             ) : multiImages.length > 0 ? (
               <div className="space-y-2.5">
@@ -235,8 +235,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   <span className="font-medium text-neutral-700 flex items-center gap-1.5">
                     <FileCheck className="w-3.5 h-3.5 text-green-600" />
                     {multiImages.length > 1
-                      ? `已安全拆分为 ${multiImages.length} 张黄金比例卡片 (防压缩模糊)`
-                      : '全文篇幅精炼，单张黄金比例即可容纳'}
+                      ? `已拆分为 ${multiImages.length} 张小红书标准卡片 (1242×1660)`
+                      : '全文篇幅精炼，单张小红书标准卡片 (1242×1660) 即可容纳'}
                   </span>
                   {multiImages.length > 1 && (
                     <div className="flex items-center gap-1">

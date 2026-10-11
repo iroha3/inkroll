@@ -41,6 +41,22 @@ export interface CardConfig {
   customBgColor?: string;
   /** 自定义文字色（覆盖主题） */
   customTextColor?: string;
+  /** 场景规格预设（如小红书、朋友圈、幻灯片等） */
+  scene?: ScenePreset;
+}
+
+export type ScenePreset = 'xiaohongshu' | 'square' | 'slide' | 'story' | 'custom';
+
+export interface SceneSpec {
+  id: ScenePreset;
+  name: string;
+  shortName: string;
+  ratioLabel: string;
+  width: number;
+  height: number;
+  exportWidth: number;
+  exportHeight: number;
+  description: string;
 }
 
 export type InkrollOptions = Partial<CardConfig> & {
@@ -48,6 +64,7 @@ export type InkrollOptions = Partial<CardConfig> & {
   scale?: 2 | 3;
   format?: 'png' | 'jpeg';
   fileName?: string;
+  scene?: ScenePreset;
 };
 
 export interface ThemeColors {

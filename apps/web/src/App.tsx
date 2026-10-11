@@ -52,6 +52,7 @@ const DEFAULT_CONFIG: CardConfig = {
   canvasBg: 'neutral-gray',
   exportScale: 3,
   exportFormat: 'png',
+  scene: 'xiaohongshu',
 };
 
 export default function App() {
