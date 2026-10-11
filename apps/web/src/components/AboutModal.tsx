@@ -43,36 +43,21 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* 提炼核心定位与三大要素 */}
-        <div className="py-4 space-y-3.5">
-          <p className="text-neutral-600 text-[13px] leading-relaxed">
-            专注将 Markdown 随笔与笔记，排版为温润有质感的多画幅社交图文卡片。
+        {/* 开发者寄语与说明 */}
+        <div className="py-4 space-y-3.5 text-[13px] leading-relaxed text-neutral-600">
+          <p>
+            我们希望为你提供一块克制而温润的画布：不打扰思考，专注将 Markdown 随笔、读书笔记、公式与图表沉淀为优雅的图文卡片。
+          </p>
+          <p className="text-neutral-500 text-xs">
+            所有排版与渲染均在浏览器本地完成，文字内容绝不上云，纯粹且私密。
           </p>
 
-          <div className="space-y-2.5 p-3.5 bg-neutral-50/80 rounded-xl border border-neutral-100 text-xs">
-            <div className="flex items-center gap-2.5 text-neutral-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-              <span className="font-semibold text-neutral-900">多画幅适配</span>
-              <span className="text-neutral-500 text-xs ml-auto">小红书 · 朋友圈 · 幻灯片 · 卷轴长图</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-neutral-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-              <span className="font-semibold text-neutral-900">专业表达</span>
-              <span className="text-neutral-500 text-xs ml-auto">公式 (KaTeX) · 图表 (Mermaid) · 代码 · 脚注</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-neutral-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-700 shrink-0" />
-              <span className="font-semibold text-neutral-900">离线隐私</span>
-              <span className="text-neutral-500 text-xs ml-auto">浏览器纯本地渲染，文字内容绝不上云</span>
-            </div>
-          </div>
-
-          {/* 本地字体提示 */}
-          <div className="p-3 bg-neutral-50/80 rounded-xl border border-neutral-100 text-xs leading-relaxed text-neutral-500 flex items-start gap-2.5">
+          {/* 字体质感提示：明确路径与双击安装 */}
+          <div className="p-3 bg-neutral-50/80 rounded-xl border border-neutral-100 text-xs text-neutral-500 flex items-start gap-2.5">
             <span className="text-neutral-400 shrink-0 select-none text-sm mt-[-1px]">💡</span>
             <div>
               <span className="text-neutral-800 font-medium">字体质感提示：</span>
-              若系统本地已安装<strong>「霞鹜文楷」</strong>或<strong>「思源宋体」</strong>，排版引擎将自动优先调用，导出更具印刷级温润质感的卡片。
+              推荐双击安装项目 <code className="bg-neutral-200/60 px-1 py-0.5 rounded text-[11px] font-mono text-neutral-700">kami/assets/fonts</code> 内的字体文件（或系统本地「霞鹜文楷 / 思源宋体」），排版引擎将自动优先调用，呈现最佳印刷级质感。
             </div>
           </div>
 
