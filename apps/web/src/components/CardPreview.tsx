@@ -26,6 +26,14 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   const [activePage, setActivePage] = useState<number>(1);
   const [pagesTotal, setPagesTotal] = useState<number>(1);
 
+  // 引用变量用于闭包中获取最新状态与防抖冷却锁
+  const activePageRef = useRef<number>(activePage);
+  activePageRef.current = activePage;
+  const pagesTotalRef = useRef<number>(pagesTotal);
+  pagesTotalRef.current = pagesTotal;
+  const isWheelLockedRef = useRef<boolean>(false);
+  const wheelLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
@@ -59,7 +67,7 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
           // 横向滑轨容器：卡片一字排开，支持卡片吸附
           const container = document.createElement('div');
           container.className =
-            'flex flex-row items-center gap-10 py-6 px-4 md:px-8 snap-x snap-proximity select-none';
+            'flex flex-row items-center gap-10 py-6 px-8 md:px-16 snap-x snap-proximity select-none';
 
           pages.forEach((pageEl, idx) => {
             const pageWrapper = document.createElement('div');
@@ -124,7 +132,29 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
     };
   }, [content, config, renderMode, cardRef, onPageCountChange]);
 
-  // 2. 分页模式下平滑映射鼠标滚轮（纵向滚轮转横向游走）
+  // 2. 精确平滑导航到指定卡片（视口居中吸附对齐）
+  const goToPage = (targetIndex: number) => {
+    if (!scrollRef.current || !hostRef.current || renderMode !== 'paged') return;
+    const clampedIndex = Math.min(pagesTotalRef.current, Math.max(1, targetIndex));
+    const targetEl = hostRef.current.querySelector(
+      `[data-page-index="${clampedIndex}"]`
+    ) as HTMLElement | null;
+
+    if (targetEl) {
+      const containerRect = scrollRef.current.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+
+      // 精确计算视口几何中心对齐位移
+      const targetCenter = targetRect.left + targetRect.width / 2;
+      const containerCenter = containerRect.left + containerRect.width / 2;
+      const offsetDiff = targetCenter - containerCenter;
+
+      scrollRef.current.scrollBy({ left: offsetDiff, behavior: 'smooth' });
+      setActivePage(clampedIndex);
+    }
+  };
+
+  // 3. 逐卡单步滚轮交互（滚动一格与点击下一页/上一页效果完全一致）
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -133,43 +163,65 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
       if (renderMode !== 'paged') return;
       if (e.ctrlKey || e.metaKey) return; // 允许触控缩放快捷键
 
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        el.scrollLeft += e.deltaY;
+      // 提取主滚动方向位移量
+      const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      // 过滤微小抖动
+      if (Math.abs(delta) < 18) return;
+
+      e.preventDefault();
+
+      // 翻页冷却锁：在单次平滑翻页动画期间阻断连续触发，确保滚一格恰好翻一页
+      if (isWheelLockedRef.current) return;
+      isWheelLockedRef.current = true;
+
+      if (wheelLockTimerRef.current) clearTimeout(wheelLockTimerRef.current);
+      wheelLockTimerRef.current = setTimeout(() => {
+        isWheelLockedRef.current = false;
+      }, 380);
+
+      const current = activePageRef.current;
+      const total = pagesTotalRef.current;
+
+      if (delta > 0 && current < total) {
+        goToPage(current + 1);
+      } else if (delta < 0 && current > 1) {
+        goToPage(current - 1);
       }
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       el.removeEventListener('wheel', onWheel);
+      if (wheelLockTimerRef.current) clearTimeout(wheelLockTimerRef.current);
     };
   }, [renderMode]);
 
-  // 3. 动态监测当前可见的卡片索引
+  // 4. 实时动态计算当前视口中央聚焦的卡片编号
   const handleScroll = () => {
-    if (!scrollRef.current || renderMode !== 'paged' || pagesTotal <= 1) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll <= 0) return;
-    const progress = scrollLeft / maxScroll;
-    const pageIndex = Math.min(pagesTotal, Math.max(1, Math.round(progress * (pagesTotal - 1)) + 1));
-    setActivePage(pageIndex);
+    if (!scrollRef.current || !hostRef.current || renderMode !== 'paged' || pagesTotal <= 1) return;
+    const containerRect = scrollRef.current.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+
+    const cards = hostRef.current.querySelectorAll('[data-page-index]');
+    let closestIndex = activePage;
+    let minDistance = Infinity;
+
+    cards.forEach((card) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      const dist = Math.abs(cardCenter - containerCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = Number(card.getAttribute('data-page-index')) || 1;
+      }
+    });
+
+    if (closestIndex !== activePage) {
+      setActivePage(closestIndex);
+    }
   };
 
-  // 4. 辅助滑动翻页
-  const scrollPrev = () => {
-    if (!scrollRef.current) return;
-    const step = 440 * zoomLevel;
-    scrollRef.current.scrollBy({ left: -step, behavior: 'smooth' });
-  };
-
-  const scrollNext = () => {
-    if (!scrollRef.current) return;
-    const step = 440 * zoomLevel;
-    scrollRef.current.scrollBy({ left: step, behavior: 'smooth' });
-  };
-
-  // 5. 键盘左右方向键便捷切换
+  // 5. 键盘左右方向键支持
   useEffect(() => {
     if (renderMode !== 'paged' || pagesTotal <= 1) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -179,16 +231,16 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
       }
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        scrollPrev();
+        goToPage(activePageRef.current - 1);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        scrollNext();
+        goToPage(activePageRef.current + 1);
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [renderMode, pagesTotal, zoomLevel]);
+  }, [renderMode, pagesTotal]);
 
   const getCanvasBgClass = () => {
     switch (config.canvasBg) {
@@ -212,7 +264,7 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={`w-full h-full overflow-auto overscroll-contain transition-colors duration-200 ${getCanvasBgClass()}`}
+        className={`w-full h-full overflow-auto overscroll-contain scroll-smooth transition-colors duration-200 ${getCanvasBgClass()}`}
       >
         <div
           className={`min-w-full min-h-full flex items-center p-6 md:p-10 ${
@@ -238,10 +290,10 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
       {renderMode === 'paged' && pagesTotal > 1 && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-neutral-200/80 text-xs select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
           <button
-            onClick={scrollPrev}
+            onClick={() => goToPage(activePage - 1)}
             disabled={activePage === 1}
             className="p-1 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent rounded-full transition-colors cursor-pointer text-neutral-600 hover:text-black"
-            title="上一张 (←)"
+            title="上一张 (← 或 滚轮向上)"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
@@ -249,10 +301,10 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
             {activePage} / {pagesTotal}
           </span>
           <button
-            onClick={scrollNext}
+            onClick={() => goToPage(activePage + 1)}
             disabled={activePage === pagesTotal}
             className="p-1 hover:bg-neutral-100 disabled:opacity-30 disabled:hover:bg-transparent rounded-full transition-colors cursor-pointer text-neutral-600 hover:text-black"
-            title="下一张 (→)"
+            title="下一张 (→ 或 滚轮向下)"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
