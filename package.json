@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev:web": "bun --filter inkroll-web dev",
-    "build:web": "bun --filter inkroll-web build",
+    "build:web": "bun run build:core && bun --filter inkroll-web build",
     "dev:lite": "bun --filter inkroll-lite dev",
     "build:lite": "bun --filter inkroll-lite build",
     "build:core": "bun --filter @inkroll/core build",

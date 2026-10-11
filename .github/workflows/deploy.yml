@@ -33,7 +33,7 @@ jobs:
         run: bun install
 
       - name: Build web app
-        run: bun --filter inkroll-web build
+        run: bun run build:core && bun --filter inkroll-web build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
