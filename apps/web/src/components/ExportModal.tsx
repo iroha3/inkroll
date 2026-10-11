@@ -39,6 +39,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
 
+  const sceneInfoMap: Record<string, { label: string; name: string; size: string }> = {
+    xiaohongshu: { label: '小红书卡片', name: '小红书标准卡片 (3:4)', size: '1242×1660' },
+    square: { label: '朋友圈卡片', name: '朋友圈方形卡片 (1:1)', size: '1242×1242' },
+    slide: { label: '幻灯片卡片', name: '幻灯片知识卡片 (16:9)', size: '1920×1080' },
+    story: { label: '竖屏海报', name: '竖屏全景海报 (9:16)', size: '1080×1920' },
+  };
+  const activeSceneInfo = (config.scene && sceneInfoMap[config.scene]) || sceneInfoMap.xiaohongshu;
+
   // 当弹窗打开时，若当前处于分页卡片模式，自动进入多图导出
   useEffect(() => {
     if (isOpen) {
@@ -236,7 +244,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>小红书卡片</span>
+            <span>{activeSceneInfo.label}</span>
           </button>
         </div>
 
@@ -246,7 +254,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             {isSlicing ? (
               <div className="flex items-center justify-center py-6 gap-2 text-xs text-neutral-500">
                 <Sparkles className="w-4 h-4 animate-spin text-black" />
-                <span>正在以小红书标准画幅 (1242×1660) 智能分页…</span>
+                <span>正在以{activeSceneInfo.name} ({activeSceneInfo.size}) 智能分页…</span>
               </div>
             ) : multiImages.length > 0 ? (
               <div className="space-y-2.5">
@@ -254,8 +262,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                   <span className="font-medium text-neutral-700 flex items-center gap-1.5">
                     <FileCheck className="w-3.5 h-3.5 text-green-600" />
                     {multiImages.length > 1
-                      ? `已拆分为 ${multiImages.length} 张小红书标准卡片 (1242×1660)`
-                      : '全文篇幅精炼，单张小红书标准卡片 (1242×1660) 即可容纳'}
+                      ? `已拆分为 ${multiImages.length} 张${activeSceneInfo.name} (${activeSceneInfo.size})`
+                      : `全文篇幅精炼，单张${activeSceneInfo.name} (${activeSceneInfo.size}) 即可容纳`}
                   </span>
                   {multiImages.length > 1 && (
                     <div className="flex items-center gap-1">

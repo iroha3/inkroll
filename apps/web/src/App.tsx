@@ -172,6 +172,8 @@ export default function App() {
         setViewMode={setViewMode}
         renderMode={renderMode}
         setRenderMode={setRenderMode}
+        scene={config.scene || 'xiaohongshu'}
+        onSelectScene={(newScene) => setConfig((prev) => ({ ...prev, scene: newScene }))}
         pageCount={pageCount}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
@@ -222,6 +224,7 @@ export default function App() {
               config={config}
               onChange={setConfig}
               onReset={() => setConfig(DEFAULT_CONFIG)}
+              renderMode={renderMode}
             />
           </div>
         )}

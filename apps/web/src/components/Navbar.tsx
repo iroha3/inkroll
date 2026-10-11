@@ -9,8 +9,11 @@ import {
   Columns,
   Layers,
   AlignJustify,
+  Square,
+  Tv,
+  Smartphone,
 } from 'lucide-react';
-import { RenderMode } from '../types';
+import { RenderMode, ScenePreset } from '../types';
 
 interface NavbarProps {
   onExportClick: () => void;
@@ -19,6 +22,8 @@ interface NavbarProps {
   setViewMode: (mode: 'split' | 'preview-only' | 'editor-only') => void;
   renderMode: RenderMode;
   setRenderMode: (mode: RenderMode) => void;
+  scene: ScenePreset;
+  onSelectScene: (scene: ScenePreset) => void;
   pageCount: number;
   zoomLevel: number;
   setZoomLevel: (zoom: number | ((prev: number) => number)) => void;
@@ -33,6 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setViewMode,
   renderMode,
   setRenderMode,
+  scene,
+  onSelectScene,
   pageCount,
   zoomLevel,
   setZoomLevel,
@@ -63,10 +70,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
 
-      {/* Middle: Render Mode (Continuous vs 3:4 Paged) & Layout / Zoom Controls */}
+      {/* Middle: Render Mode (Continuous Roll vs Purpose-built Social Scenes) */}
       <div className="flex items-center gap-2">
-        {/* 形态分段选择器：卷轴长图 vs 3:4 分页 (小红书社交场景) */}
         <div className="flex items-center gap-0.5 bg-neutral-100/90 p-0.5 rounded-xl border border-neutral-200/70">
+          {/* 长图模式 */}
           <button
             onClick={() => setRenderMode('continuous')}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
@@ -74,16 +81,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
-            title="卷轴长图模式：单张连贯长图"
+            title="卷轴长图模式：单张连贯长图（高度随内容延展）"
           >
             <AlignJustify className="w-3.5 h-3.5" />
-            <span>长图模式</span>
+            <span>长图</span>
           </button>
 
+          <div className="w-[1px] h-3.5 bg-neutral-200 mx-0.5" />
+
+          {/* 场景 1：小红书 (3:4 · 1242×1660) */}
           <button
-            onClick={() => setRenderMode('paged')}
+            onClick={() => {
+              setRenderMode('paged');
+              onSelectScene('xiaohongshu');
+            }}
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-              renderMode === 'paged'
+              renderMode === 'paged' && scene === 'xiaohongshu'
                 ? 'bg-white text-neutral-900 shadow-xs font-semibold'
                 : 'text-neutral-600 hover:text-black'
             }`}
@@ -91,7 +104,73 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>小红书</span>
-            {renderMode === 'paged' && pageCount > 1 && (
+            {renderMode === 'paged' && scene === 'xiaohongshu' && pageCount > 1 && (
+              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
+                {pageCount}P
+              </span>
+            )}
+          </button>
+
+          {/* 场景 2：朋友圈 / 方形 (1:1 · 1242×1242) */}
+          <button
+            onClick={() => {
+              setRenderMode('paged');
+              onSelectScene('square');
+            }}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'paged' && scene === 'square'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="朋友圈 / 社交媒体 1:1 方形画幅 (1242×1242)"
+          >
+            <Square className="w-3.5 h-3.5" />
+            <span>朋友圈</span>
+            {renderMode === 'paged' && scene === 'square' && pageCount > 1 && (
+              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
+                {pageCount}P
+              </span>
+            )}
+          </button>
+
+          {/* 场景 3：幻灯片 / 知识图解 (16:9 · 1920×1080) */}
+          <button
+            onClick={() => {
+              setRenderMode('paged');
+              onSelectScene('slide');
+            }}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'paged' && scene === 'slide'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="公众号 / 知识图解 / 幻灯片 16:9 (1920×1080)"
+          >
+            <Tv className="w-3.5 h-3.5" />
+            <span>幻灯片</span>
+            {renderMode === 'paged' && scene === 'slide' && pageCount > 1 && (
+              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
+                {pageCount}P
+              </span>
+            )}
+          </button>
+
+          {/* 场景 4：竖屏海报 (9:16 · 1080×1920) */}
+          <button
+            onClick={() => {
+              setRenderMode('paged');
+              onSelectScene('story');
+            }}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+              renderMode === 'paged' && scene === 'story'
+                ? 'bg-white text-neutral-900 shadow-xs font-semibold'
+                : 'text-neutral-600 hover:text-black'
+            }`}
+            title="快手 / 故事 / 竖屏海报 9:16 (1080×1920)"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>海报</span>
+            {renderMode === 'paged' && scene === 'story' && pageCount > 1 && (
               <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1 py-0.2 rounded font-mono font-medium">
                 {pageCount}P
               </span>

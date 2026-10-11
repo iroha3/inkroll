@@ -1,14 +1,20 @@
 import React, { useRef } from 'react';
 import { Sliders, Layout, Palette, Stamp } from 'lucide-react';
-import { CardConfig, ThemeStyle, FontStyle } from '../types';
+import { CardConfig, ThemeStyle, FontStyle, RenderMode } from '../types';
 
 interface SettingsPanelProps {
   config: CardConfig;
   onChange: (newConfig: CardConfig) => void;
   onReset: () => void;
+  renderMode?: RenderMode;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, onReset }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  config,
+  onChange,
+  onReset,
+  renderMode = 'continuous',
+}) => {
   const updateConfig = <K extends keyof CardConfig>(key: K, value: CardConfig[K]) => {
     onChange({
       ...config,
@@ -166,68 +172,47 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange, 
               <span>版面尺寸</span>
             </div>
 
-            {/* Width */}
-            <div>
-              <label className="block text-[11px] text-neutral-400 mb-1">卡片宽度</label>
-              <div className="grid grid-cols-3 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
-                {[
-                  { width: 380, label: '380 便签' },
-                  { width: 460, label: '460 标准' },
-                  { width: 540, label: '540 宽幅' },
-                ].map((item) => (
-                  <button
-                    key={item.width}
-                    onClick={() => updateConfig('cardWidth', item.width)}
-                    className={`py-1.5 text-xs rounded-md transition-all cursor-pointer ${
-                      config.cardWidth === item.width
-                        ? 'bg-white shadow-xs font-semibold text-black'
-                        : 'text-neutral-600 hover:text-black'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 场景规格预设 */}
-            <div>
-              <div className="flex items-center justify-between text-[11px] text-neutral-400 mb-1">
-                <span>社交场景规格</span>
-                <span className="font-mono text-[10px] text-neutral-500">
-                  {config.scene === 'square'
-                    ? '1242×1242 · 1:1'
-                    : config.scene === 'slide'
-                    ? '1920×1080 · 16:9'
-                    : config.scene === 'story'
-                    ? '1080×1920 · 9:16'
-                    : '1242×1660 · 3:4'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
-                {[
-                  { id: 'xiaohongshu', label: '小红书 (3:4)' },
-                  { id: 'square', label: '朋友圈 (1:1)' },
-                  { id: 'slide', label: '幻灯片 (16:9)' },
-                  { id: 'story', label: '竖屏海报 (9:16)' },
-                ].map((s) => {
-                  const isSelected = (!config.scene && s.id === 'xiaohongshu') || config.scene === s.id;
-                  return (
+            {/* Width (Only in Continuous Long Image mode; hidden in Paged Scene mode because scenes have curated optimal dimensions) */}
+            {renderMode === 'continuous' ? (
+              <div>
+                <label className="block text-[11px] text-neutral-400 mb-1">长图宽度</label>
+                <div className="grid grid-cols-3 gap-1 bg-neutral-100 p-0.5 rounded-lg border border-neutral-200/50">
+                  {[
+                    { width: 380, label: '380 便签' },
+                    { width: 460, label: '460 标准' },
+                    { width: 540, label: '540 宽幅' },
+                  ].map((item) => (
                     <button
-                      key={s.id}
-                      onClick={() => updateConfig('scene', s.id as any)}
-                      className={`py-1.5 px-1.5 text-xs rounded-md transition-all cursor-pointer text-center ${
-                        isSelected
+                      key={item.width}
+                      onClick={() => updateConfig('cardWidth', item.width)}
+                      className={`py-1.5 text-xs rounded-md transition-all cursor-pointer ${
+                        config.cardWidth === item.width
                           ? 'bg-white shadow-xs font-semibold text-black'
                           : 'text-neutral-600 hover:text-black'
                       }`}
                     >
-                      {s.label}
+                      {item.label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/60 text-xs">
+                <div className="flex items-center gap-1.5 text-neutral-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="font-medium text-[11px]">场景画幅已锁定</span>
+                </div>
+                <span className="font-mono text-[11px] font-semibold text-neutral-800">
+                  {config.scene === 'square'
+                    ? '1:1 · 1242×1242'
+                    : config.scene === 'slide'
+                    ? '16:9 · 1920×1080'
+                    : config.scene === 'story'
+                    ? '9:16 · 1080×1920'
+                    : '小红书 3:4 · 1242×1660'}
+                </span>
+              </div>
+            )}
 
             {/* Padding */}
             <div>
