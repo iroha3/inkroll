@@ -45,4 +45,8 @@ if (!iifeResult.success) {
   process.exit(1);
 }
 
+console.log('Generating TypeScript declaration files (.d.ts)...');
+const { spawnSync } = await import('node:child_process');
+spawnSync('bun', ['x', 'tsc', '-p', resolve(ROOT, 'tsconfig.json')], { stdio: 'inherit' });
+
 console.log('✓ @inkroll/core built successfully.');

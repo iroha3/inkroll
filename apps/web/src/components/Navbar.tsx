@@ -12,6 +12,7 @@ import {
 
 interface NavbarProps {
   onExportClick: () => void;
+  onAboutClick: () => void;
   viewMode: 'split' | 'preview-only' | 'editor-only';
   setViewMode: (mode: 'split' | 'preview-only' | 'editor-only') => void;
   zoomLevel: number;
@@ -22,6 +23,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   onExportClick,
+  onAboutClick,
   viewMode,
   setViewMode,
   zoomLevel,
@@ -30,21 +32,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   setShowSettings,
 }) => {
   return (
-    <header className="h-14 bg-white border-b border-neutral-200 px-4 flex items-center justify-between select-none z-20 shrink-0">
-      {/* Left: App Logo & Branding */}
+    <header className="h-14 bg-white border-b border-neutral-200/80 px-4 flex items-center justify-between select-none z-20 shrink-0">
+      {/* Left: App Logo & Branding (Clickable for About & Tribute) */}
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold shadow-sm">
-          <FileText className="w-4 h-4 text-white" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-bold text-sm tracking-tight text-neutral-900">墨卷 InkRoll</h1>
-            <span className="text-[10px] bg-neutral-100 border border-neutral-200/80 text-neutral-600 px-1.5 py-0.5 rounded-full font-mono font-medium">
-              v1.0
-            </span>
+        <button
+          onClick={onAboutClick}
+          className="group flex items-center gap-2.5 p-1 -ml-1 rounded-xl hover:bg-neutral-100 transition-all cursor-pointer text-left"
+          title="点击查看关于墨卷与致敬"
+        >
+          <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:scale-105 transition-transform">
+            墨
           </div>
-          <p className="text-[11px] text-neutral-400 hidden sm:block">墨下生花，一卷成图</p>
-        </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-bold text-sm tracking-tight text-neutral-900 group-hover:text-black">墨卷 InkRoll</h1>
+              <span className="text-[10px] bg-neutral-100 group-hover:bg-neutral-200/80 border border-neutral-200/80 text-neutral-600 px-1.5 py-0.5 rounded-full font-mono font-medium transition-colors">
+                v1.0
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-400 hidden sm:block">墨下生花，一卷成图</p>
+          </div>
+        </button>
       </div>
 
       {/* Middle: View Mode Controls & Zoom */}

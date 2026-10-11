@@ -267,98 +267,49 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           </div>
         )}
 
-        {/* Export Options */}
-        <div className="space-y-3 mb-5">
-          {/* Resolution / DPI */}
-          <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">
-              导出清晰度
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { scale: 2, label: '2x 高清' },
-                { scale: 3, label: '3x 超清视网膜 (推荐)' },
-              ].map((item) => (
-                <button
-                  key={item.scale}
-                  onClick={() => setScale(item.scale)}
-                  className={`py-1.5 px-3 text-xs border rounded-lg text-left transition-all cursor-pointer ${
-                    scale === item.scale
-                      ? 'bg-black text-white border-black font-semibold shadow-sm'
-                      : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Format */}
-          <div>
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">图片格式</label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'png', label: 'PNG (无损画质)' },
-                { id: 'jpeg', label: 'JPEG (文件更小)' },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setFormat(f.id as 'png' | 'jpeg')}
-                  className={`py-1.5 px-3 text-xs border rounded-lg text-left transition-all cursor-pointer ${
-                    format === f.id
-                      ? 'bg-neutral-900 text-white border-neutral-900 font-semibold'
-                      : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Action Buttons */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {exportMode === 'single' ? (
             <>
+              {/* Primary: Copy to clipboard */}
               <button
-                onClick={handleDownloadSingle}
+                onClick={() => handleCopyImage()}
                 disabled={isExporting}
-                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
               >
-                {isExporting ? (
-                  <>
-                    <Sparkles className="w-4 h-4 animate-spin" />
-                    <span>正在光栅化长图...</span>
-                  </>
-                ) : downloadSuccess ? (
+                {copiedSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-green-400" />
-                    <span>长图已成功下载！</span>
+                    <span>已复制到剪贴板</span>
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4" />
-                    <span>下载长图到本地</span>
+                    <Copy className="w-4 h-4" />
+                    <span>复制图片</span>
                   </>
                 )}
               </button>
 
+              {/* Secondary: Download image */}
               <button
-                onClick={() => handleCopyImage()}
+                onClick={handleDownloadSingle}
                 disabled={isExporting}
-                className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
               >
-                {copiedSuccess ? (
+                {isExporting ? (
+                  <>
+                    <Sparkles className="w-4 h-4 animate-spin" />
+                    <span>正在生成...</span>
+                  </>
+                ) : downloadSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-green-600" />
-                    <span>已复制到剪贴板！</span>
+                    <span>长图已保存</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 text-neutral-600" />
-                    <span>直接复制图片到剪贴板</span>
+                    <Download className="w-4 h-4 text-neutral-600" />
+                    <span>保存图片</span>
                   </>
                 )}
               </button>
@@ -366,42 +317,42 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           ) : (
             <>
               <button
-                onClick={handleDownloadMulti}
+                onClick={() => handleCopyImage(multiImages[currentSlice])}
                 disabled={isExporting || isSlicing || multiImages.length === 0}
-                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
               >
-                {isExporting ? (
-                  <>
-                    <Sparkles className="w-4 h-4 animate-spin" />
-                    <span>正在依次导出切片...</span>
-                  </>
-                ) : downloadSuccess ? (
+                {copiedSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-green-400" />
-                    <span>全部切片已下载完成！</span>
+                    <span>已复制第 {currentSlice + 1} 张</span>
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4" />
-                    <span>批量下载全部切片 ({multiImages.length} 张)</span>
+                    <Copy className="w-4 h-4" />
+                    <span>复制当前卡片</span>
                   </>
                 )}
               </button>
 
               <button
-                onClick={() => handleCopyImage(multiImages[currentSlice])}
+                onClick={handleDownloadMulti}
                 disabled={isExporting || isSlicing || multiImages.length === 0}
-                className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
               >
-                {copiedSuccess ? (
+                {isExporting ? (
+                  <>
+                    <Sparkles className="w-4 h-4 animate-spin" />
+                    <span>正在导出切片...</span>
+                  </>
+                ) : downloadSuccess ? (
                   <>
                     <Check className="w-4 h-4 text-green-600" />
-                    <span>已复制第 {currentSlice + 1} 张到剪贴板！</span>
+                    <span>切片已下载</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 text-neutral-600" />
-                    <span>复制当前第 {currentSlice + 1} 张图片</span>
+                    <Download className="w-4 h-4 text-neutral-600" />
+                    <span>保存全部切片 ({multiImages.length} 张)</span>
                   </>
                 )}
               </button>

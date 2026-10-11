@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import {
   Bold,
   Italic,
@@ -9,16 +9,15 @@ import {
   Table,
   Upload,
   Trash2,
-  Copy,
-  Save,
   FileText,
   Highlighter,
   Divide,
   List,
   ListOrdered,
   CheckSquare,
+  RotateCcw,
+  RotateCw,
 } from 'lucide-react';
-import { TEMPLATE_PRESETS } from '../constants/templates';
 import { CardConfig } from '../types';
 
 interface EditorProps {
@@ -26,9 +25,84 @@ interface EditorProps {
   onChange: (value: string) => void;
   onUndo: () => void;
   onRedo: () => void;
-  onApplyPreset: (presetId: string) => void;
-  activePresetId: string;
+  onResetDefault: () => void;
   config: CardConfig;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// 轻量级方案 A：零依赖高性能 Markdown 语法高亮染色器
+function highlightMarkdown(text: string): string {
+  const lines = text.split('\n');
+  const highlightedLines = lines.map((line) => {
+    const escaped = escapeHtml(line);
+
+    // H1
+    if (/^#\s+/.test(line)) {
+      return `<span class="text-neutral-900 font-bold">${escaped}</span>`;
+    }
+    // H2
+    if (/^##\s+/.test(line)) {
+      return `<span class="text-neutral-900 font-bold">${escaped}</span>`;
+    }
+    // H3-H6
+    if (/^#{3,6}\s+/.test(line)) {
+      return `<span class="text-neutral-800 font-semibold">${escaped}</span>`;
+    }
+    // 引用块 >
+    if (/^>\s*/.test(line)) {
+      return `<span class="text-emerald-700 italic">${escaped}</span>`;
+    }
+    // 分割线 ---
+    if (/^---$|^===$/.test(line.trim())) {
+      return `<span class="text-neutral-400 font-bold">${escaped}</span>`;
+    }
+
+    let formatted = escaped;
+
+    // 列表项标记
+    if (/^(\s*[-*+]|\s*\d+\.)\s+/.test(line)) {
+      formatted = formatted.replace(
+        /^(\s*[-*+]|\s*\d+\.)(\s+)/,
+        '<span class="text-neutral-400 font-semibold">$1</span>$2'
+      );
+    }
+
+    // 行内代码 `code`
+    formatted = formatted.replace(
+      /(`[^`]+`)/g,
+      '<span class="text-rose-600 bg-neutral-100 px-1 rounded font-mono font-medium">$1</span>'
+    );
+    // 加粗 **text**
+    formatted = formatted.replace(
+      /(\*\*[^*]+\*\*)/g,
+      '<span class="font-bold text-neutral-900">$1</span>'
+    );
+    // 斜体 *text*
+    formatted = formatted.replace(
+      /(?<!\*)\*([^*]+)\*(?!\*)/g,
+      '<span class="italic text-neutral-700">*$1*</span>'
+    );
+    // 高亮 ==text==
+    formatted = formatted.replace(
+      /(==[^=]+==)/g,
+      '<span class="bg-amber-100 text-amber-900 px-0.5 rounded font-medium">$1</span>'
+    );
+    // 链接 [text](url)
+    formatted = formatted.replace(
+      /(\[[^\]]+\]\([^)]+\))/g,
+      '<span class="text-blue-600 underline">$1</span>'
+    );
+
+    return formatted;
+  });
+
+  return highlightedLines.join('\n') + (text.endsWith('\n') ? ' ' : '');
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -36,11 +110,22 @@ export const Editor: React.FC<EditorProps> = ({
   onChange,
   onUndo,
   onRedo,
-  onApplyPreset,
-  activePresetId,
+  onResetDefault,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
+
+  // 语法高亮缓存
+  const highlightedHtml = useMemo(() => highlightMarkdown(content), [content]);
+
+  // 滚动同步
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (highlightRef.current) {
+      highlightRef.current.scrollTop = e.currentTarget.scrollTop;
+      highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
   // Helper to insert markdown tags at current cursor position
   const insertFormatting = (prefix: string, suffix: string = '') => {
@@ -81,27 +166,6 @@ export const Editor: React.FC<EditorProps> = ({
     if (e.target) e.target.value = '';
   };
 
-  // Download current markdown as a .md file
-  const handleSaveFile = () => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const now = new Date();
-    const stamp = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-      '-',
-      String(now.getHours()).padStart(2, '0'),
-      String(now.getMinutes()).padStart(2, '0'),
-      String(now.getSeconds()).padStart(2, '0'),
-    ].join('');
-    a.href = url;
-    a.download = `markdown_${stamp}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   // Keyboard shortcuts: Ctrl/Cmd+Z undo, +Shift+Z or Ctrl+Y redo
   const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!(e.ctrlKey || e.metaKey)) return;
@@ -117,161 +181,42 @@ export const Editor: React.FC<EditorProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-neutral-200 text-neutral-800 select-none">
-      {/* Editor Header Toolbar */}
-      <div className="p-3 border-b border-neutral-200 bg-neutral-50/70 flex flex-wrap items-center justify-between gap-2">
+    <div className="h-full flex flex-col bg-white border-r border-neutral-200/80 text-neutral-800 select-none">
+      {/* 顶部精简工具头：干掉预设下拉框，保留字数、导入、清空与示例 */}
+      <div className="px-3.5 py-2.5 border-b border-neutral-200/70 bg-neutral-50/60 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-neutral-600" />
-          <span className="font-semibold text-sm text-neutral-800">Markdown 编辑器</span>
+          <FileText className="w-3.5 h-3.5 text-neutral-500" />
+          <span className="font-semibold text-xs text-neutral-800 tracking-tight">Markdown 稿纸</span>
+          <span className="text-[10px] text-neutral-400 font-mono">● 自动保存</span>
         </div>
 
-        {/* Template Presets Selector */}
         <div className="flex items-center gap-2">
-          <select
-            value={activePresetId}
-            onChange={(e) => onApplyPreset(e.target.value)}
-            className="text-xs font-medium bg-white border border-neutral-200 rounded-lg px-2.5 py-1.5 text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-black/5 cursor-pointer"
+          {/* 字数统计 */}
+          <span className="text-[11px] font-mono text-neutral-400">
+            {content.length} 字
+          </span>
+
+          <span className="text-neutral-200">|</span>
+
+          {/* 撤销 / 重做 */}
+          <button
+            onClick={onUndo}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-500 hover:text-black transition-colors cursor-pointer"
+            title="撤销 (Ctrl+Z)"
           >
-            <option disabled value="">
-              选择样例预设...
-            </option>
-            {TEMPLATE_PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={onRedo}
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-500 hover:text-black transition-colors cursor-pointer"
+            title="重做 (Ctrl+Y)"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </button>
 
-      {/* Formatting Tools */}
-      <div className="px-3 py-2 border-b border-neutral-100 bg-white flex flex-wrap items-center gap-1 overflow-x-auto text-neutral-600">
-        <button
-          onClick={() => insertFormatting('**', '**')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="加粗 **bold**"
-        >
-          <Bold className="w-4 h-4" />
-        </button>
+          <span className="text-neutral-200">|</span>
 
-        <button
-          onClick={() => insertFormatting('*', '*')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="斜体 *italic*"
-        >
-          <Italic className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('==', '==')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="高亮 ==highlight=="
-        >
-          <Highlighter className="w-4 h-4" />
-        </button>
-
-        <div className="w-[1px] h-4 bg-neutral-200 mx-1" />
-
-        <button
-          onClick={() => insertFormatting('# ')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="一级标题 # "
-        >
-          <Heading1 className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('> ')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="引用 > "
-        >
-          <Quote className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('`', '`')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="行内代码 `code`"
-        >
-          <Code className="w-4 h-4" />
-        </button>
-
-        <div className="w-[1px] h-4 bg-neutral-200 mx-1" />
-
-        <button
-          onClick={() => insertFormatting('- ')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="无序列表"
-        >
-          <List className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('1. ')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="有序列表"
-        >
-          <ListOrdered className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('- [ ] ')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="任务列表"
-        >
-          <CheckSquare className="w-4 h-4" />
-        </button>
-
-        <div className="w-[1px] h-4 bg-neutral-200 mx-1" />
-
-        <button
-          onClick={() => insertFormatting('[', '](https://example.com)')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入链接"
-        >
-          <Link className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('\n| 标题1 | 标题2 |\n| --- | --- |\n| 内容1 | 内容2 |\n')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入表格"
-        >
-          <Table className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => insertFormatting('\n---\n')}
-          className="p-1.5 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
-          title="插入分割线 ---"
-        >
-          <Divide className="w-4 h-4" />
-        </button>
-
-        <div className="w-[1px] h-4 bg-neutral-200 mx-1" />
-      </div>
-
-      {/* Textarea Area */}
-      <div className="flex-1 relative p-2">
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleTextareaKeyDown}
-          placeholder="在此粘贴或输入 Markdown 内容..."
-          className="w-full h-full p-3 font-mono text-sm leading-relaxed text-neutral-800 resize-none focus:outline-none placeholder:text-neutral-400 select-text"
-        />
-      </div>
-
-      {/* Bottom Status Bar & Actions */}
-      <div className="p-3 border-t border-neutral-200 bg-neutral-50/80 flex items-center justify-between text-xs text-neutral-500">
-        <div className="flex items-center gap-3">
-          <span>{content.length} 字符</span>
-          <span>{content.split('\n').length} 行</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Upload Button */}
+          {/* 导入文件 */}
           <input
             type="file"
             ref={fileInputRef}
@@ -281,42 +226,156 @@ export const Editor: React.FC<EditorProps> = ({
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-neutral-200 rounded-md hover:bg-neutral-100 text-neutral-700 transition-colors cursor-pointer"
-            title="上传 .md 或 .txt 文件"
+            className="p-1 hover:bg-neutral-200/60 rounded text-neutral-500 hover:text-black transition-colors cursor-pointer"
+            title="导入本地 .md 文件"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>导入文件</span>
           </button>
 
-          {/* Save Markdown File */}
+          {/* 恢复示例 */}
           <button
-            onClick={handleSaveFile}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-neutral-200 rounded-md hover:bg-neutral-100 text-neutral-700 transition-colors cursor-pointer"
-            title="保存为 .md 文件到本地"
+            onClick={onResetDefault}
+            className="text-[11px] text-neutral-400 hover:text-neutral-700 hover:underline transition-colors cursor-pointer px-0.5"
+            title="恢复默认金句卡片示例"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>保存</span>
+            示例
           </button>
 
-          {/* Copy Text */}
-          <button
-            onClick={() => navigator.clipboard.writeText(content)}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-neutral-200 rounded-md hover:bg-neutral-100 text-neutral-700 transition-colors cursor-pointer"
-            title="复制 Markdown 源码"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            <span>复制</span>
-          </button>
-
-          {/* Clear Text */}
+          {/* 清空 */}
           <button
             onClick={() => onChange('')}
-            className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+            className="p-1 hover:bg-red-50 rounded text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
             title="清空编辑器"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
+      </div>
+
+      {/* 快捷排版工具条（紧凑单行） */}
+      <div className="px-3 py-1.5 border-b border-neutral-100 bg-white flex flex-wrap items-center gap-1 text-neutral-600 text-xs overflow-x-auto shrink-0">
+        <button
+          onClick={() => insertFormatting('**', '**')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="加粗 **bold**"
+        >
+          <Bold className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('*', '*')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="斜体 *italic*"
+        >
+          <Italic className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('==', '==')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="高亮标记 ==text=="
+        >
+          <Highlighter className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('# ')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="一级标题 # "
+        >
+          <Heading1 className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('> ')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="引用块 > "
+        >
+          <Quote className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('`', '`')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="行内代码 `code`"
+        >
+          <Code className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-[1px] h-3.5 bg-neutral-200 mx-1" />
+
+        <button
+          onClick={() => insertFormatting('- ')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="无序列表"
+        >
+          <List className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('1. ')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="有序列表"
+        >
+          <ListOrdered className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('- [ ] ')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="任务列表"
+        >
+          <CheckSquare className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-[1px] h-3.5 bg-neutral-200 mx-1" />
+
+        <button
+          onClick={() => insertFormatting('[', '](https://example.com)')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="插入链接"
+        >
+          <Link className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('\n| 标题1 | 标题2 |\n| --- | --- |\n| 内容1 | 内容2 |\n')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="插入表格"
+        >
+          <Table className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          onClick={() => insertFormatting('\n---\n')}
+          className="p-1 hover:bg-neutral-100 rounded text-neutral-700 hover:text-black transition-colors"
+          title="插入分割线 ---"
+        >
+          <Divide className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* 方案 A：双层结构轻量 Markdown 语法高亮文本区（无底栏，100% 垂直利用率） */}
+      <div className="flex-1 relative overflow-hidden bg-white">
+        {/* 底层染色遮罩层 */}
+        <pre
+          ref={highlightRef}
+          aria-hidden="true"
+          className="absolute inset-0 p-4 m-0 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words pointer-events-none select-none text-neutral-800 overflow-hidden box-border"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
+
+        {/* 顶层透明原生交互 Textarea（保持原生输入法 IME、手感和撤销栈零延迟） */}
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          onScroll={handleScroll}
+          onKeyDown={handleTextareaKeyDown}
+          placeholder="在此输入或粘贴 Markdown 内容..."
+          spellCheck={false}
+          className="absolute inset-0 p-4 m-0 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-words resize-none border-none outline-none bg-transparent text-transparent caret-neutral-900 selection:bg-blue-200/60 selection:text-transparent overflow-auto box-border select-text"
+        />
       </div>
     </div>
   );

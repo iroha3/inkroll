@@ -1,5 +1,5 @@
-import { buildCard } from './render';
-import { exportElement, renderToImage, downloadCardImage, downloadDataUrl } from './export';
+import { buildCard, buildCardPages } from './render';
+import { exportElement, renderToImage, renderToMultiImages, downloadCardImage, downloadDataUrl } from './export';
 import type { InkrollAPI, InkrollOptions, CoreExtensions } from './types';
 
 export * from './types';
@@ -13,8 +13,12 @@ export function createInkrollCore(): InkrollAPI {
     version: '1.0.0',
     render: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
       buildCard(markdown, options, extensions),
+    buildPages: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
+      buildCardPages(markdown, options, extensions),
     toImage: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
       renderToImage(markdown, options, extensions),
+    toMultiImages: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
+      renderToMultiImages(markdown, options, extensions),
     download: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
       downloadCardImage(markdown, options, extensions),
     exportElement: (element: HTMLElement, scale = 3, format: 'png' | 'jpeg' = 'png') =>

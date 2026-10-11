@@ -10,7 +10,7 @@ export interface CardConfig extends CoreCardConfig {
   assistantBadgeText: string;
   assistantBadgeIcon: string;
   canvasBg: 'neutral-gray' | 'light-slate' | 'pure-white' | 'dark-mode' | 'grid-pattern';
-  exportScale: 2 | 3 | 4;
+  exportScale: 2 | 3;
 }
 
 export interface TemplatePreset {
