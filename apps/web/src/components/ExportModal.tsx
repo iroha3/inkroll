@@ -85,14 +85,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
   // 1. 单张长图下载
   const handleDownloadSingle = async () => {
-    if (!cardRef.current) return;
     try {
       setIsExporting(true);
-      const dataUrl = (await renderElementToImageData(
-        cardRef.current,
-        { scale, format },
-        false
-      )) as string;
+      let dataUrl: string;
+
+      if (renderMode === 'paged') {
+        dataUrl = await InkrollCore.toImage(content, {
+          ...config,
+          exportScale: scale as 2 | 3,
+          exportFormat: format,
+        });
+      } else if (cardRef.current) {
+        dataUrl = (await renderElementToImageData(
+          cardRef.current,
+          { scale, format },
+          false
+        )) as string;
+      } else {
+        throw new Error('未找到卡片元素');
+      }
 
       if (!dataUrl) throw new Error('生成图片数据失败');
 
@@ -143,6 +154,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       if (dataUrlToCopy) {
         // 将已有切片 dataURL 转为 Blob
         const res = await fetch(dataUrlToCopy);
+        targetBlob = await res.blob();
+      } else if (renderMode === 'paged') {
+        const dataUrl = await InkrollCore.toImage(content, {
+          ...config,
+          exportScale: scale as 2 | 3,
+          exportFormat: 'png',
+        });
+        const res = await fetch(dataUrl);
         targetBlob = await res.blob();
       } else if (cardRef.current) {
         targetBlob = (await renderElementToImageData(

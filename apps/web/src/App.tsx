@@ -75,7 +75,7 @@ export default function App() {
   });
 
   const [viewMode, setViewMode] = useState<'split' | 'preview-only' | 'editor-only'>('split');
-  const [renderMode, setRenderMode] = useState<RenderMode>('continuous');
+  const [renderMode, setRenderMode] = useState<RenderMode>('paged');
   const [pageCount, setPageCount] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [showSettings, setShowSettings] = useState<boolean>(true);

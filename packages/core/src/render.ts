@@ -338,7 +338,8 @@ export async function buildCardPages(
   // 计算固定装饰层的高度（padding、title、footer）
   const paddingMap: Record<string, number> = { compact: 40, normal: 56, spacious: 72 };
   const padH = paddingMap[cfg.padding] || 56;
-  const footerH = cfg.showWatermark ? 44 : 0;
+  // 恒定预留标准页脚高度槽位（44px）：确保无论是否启用落款/页脚，单页净正文容积与画幅总高严格恒定
+  const footerH = 44;
   const titleH = cfg.showTitle && cfg.titleText ? 64 : 0;
 
   // 1. 统计所有块元素的真实渲染高度与边距
