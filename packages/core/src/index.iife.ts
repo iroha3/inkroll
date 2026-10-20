@@ -10,7 +10,7 @@ export * from './export';
 
 export function createInkrollCore(): InkrollAPI {
   return {
-    version: '1.0.0',
+    version: '1.1.0',
     render: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>
       buildCard(markdown, options, extensions),
     buildPages: (markdown: string, options?: InkrollOptions, extensions?: CoreExtensions) =>

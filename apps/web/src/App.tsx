@@ -6,6 +6,8 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ExportModal } from './components/ExportModal';
 import { AboutModal } from './components/AboutModal';
 import { CardConfig, RenderMode, ScenePreset } from './types';
+import { useIsMobile } from './hooks/useMediaQuery';
+import { Edit3, Eye } from 'lucide-react';
 
 // localStorage keys for auto-save persistence
 const CONTENT_STORAGE_KEY = 'md-card-content';
@@ -58,6 +60,9 @@ const DEFAULT_CONFIG: CardConfig = {
 };
 
 export default function App() {
+  const isMobile = useIsMobile(1024);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('editor');
+
   // 从 localStorage 恢复，首次访问默认填充极简卡片
   const [content, setContent] = useState<string>(() => {
     try {
@@ -82,10 +87,13 @@ export default function App() {
       const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : {};
       const savedScene = localStorage.getItem(SCENE_STORAGE_KEY) as ScenePreset | null;
+      const rawScene = savedScene || parsed.scene || DEFAULT_CONFIG.scene || 'xiaohongshu';
+      const validScene: ScenePreset =
+        rawScene === 'square' || rawScene === 'xiaohongshu' ? rawScene : 'xiaohongshu';
       return {
         ...DEFAULT_CONFIG,
         ...parsed,
-        scene: savedScene || parsed.scene || DEFAULT_CONFIG.scene || 'xiaohongshu',
+        scene: validScene,
       };
     } catch {
       return DEFAULT_CONFIG;
@@ -95,7 +103,13 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'split' | 'preview-only' | 'editor-only'>('split');
   const [pageCount, setPageCount] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [showSettings, setShowSettings] = useState<boolean>(true);
+  const [showSettings, setShowSettings] = useState<boolean>(() => {
+    // 桌面端默认展开设置抽屉，移动端默认收起
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
 
@@ -215,7 +229,10 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-neutral-100 overflow-hidden font-sans">
+    <div
+      className="w-full h-full h-[100dvh] flex flex-col overflow-hidden font-sans"
+      style={{ backgroundColor: '#f5f5f7' }}
+    >
       {/* 顶栏 Navbar */}
       <Navbar
         onExportClick={() => setIsExportModalOpen(true)}
@@ -233,55 +250,158 @@ export default function App() {
         setShowSettings={setShowSettings}
       />
 
-      {/* 工作区：分栏收窄 40px，居中留白显著提升 */}
-      <main className="flex-1 flex overflow-hidden relative">
-        {/* 左侧：Markdown 编辑器 (舒适适中的宽幅，兼顾大段写作与居中留白) */}
-        {(viewMode === 'split' || viewMode === 'editor-only') && (
-          <div
-            className={`${
-              viewMode === 'editor-only'
-                ? 'w-full'
-                : 'w-full lg:w-[42%] xl:w-[38%] min-w-[440px]'
-            } h-full z-10 transition-all shrink-0`}
-          >
-            <Editor
-              content={content}
-              onChange={updateContent}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-              onResetDefault={handleResetDefault}
-              config={config}
-            />
-          </div>
+      {/* 工作区 */}
+      <main
+        className="flex-1 flex overflow-hidden relative"
+        style={{ position: 'relative', zIndex: 1, backgroundColor: '#f5f5f7' }}
+      >
+        {/* 1. 移动端视图 (屏幕宽度 < 1024px)：沉浸式单视图 + 触控标签切换 */}
+        {isMobile ? (
+          mobileTab === 'editor' ? (
+            <div className="w-full h-full min-h-0 flex flex-col bg-white">
+              <Editor
+                content={content}
+                onChange={updateContent}
+                onUndo={handleUndo}
+                onRedo={handleRedo}
+                onResetDefault={handleResetDefault}
+                config={config}
+                onGoToPreview={() => setMobileTab('preview')}
+                isMobile={true}
+              />
+            </div>
+          ) : (
+            <div
+              className="w-full h-full overflow-hidden relative"
+              style={{ backgroundColor: '#f5f5f7' }}
+            >
+              <CardPreview
+                content={content}
+                config={config}
+                cardRef={cardRef}
+                zoomLevel={zoomLevel}
+                renderMode={renderMode}
+                resetScrollTrigger={resetScrollTrigger}
+                onPageCountChange={setPageCount}
+                isMobile={true}
+              />
+            </div>
+          )
+        ) : (
+          /* 2. 桌面端双栏/三栏视口 (屏幕宽度 >= 1024px) */
+          <>
+            {/* 左侧：Markdown 编辑器 */}
+            {(viewMode === 'split' || viewMode === 'editor-only') && (
+              <div
+                className={`${
+                  viewMode === 'editor-only'
+                    ? 'w-full'
+                    : 'w-full lg:w-[42%] xl:w-[38%] min-w-[380px] lg:min-w-[420px]'
+                } h-full z-10 transition-all shrink-0`}
+              >
+                <Editor
+                  content={content}
+                  onChange={updateContent}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  onResetDefault={handleResetDefault}
+                  config={config}
+                  isMobile={false}
+                />
+              </div>
+            )}
+
+            {/* 中间：长图画布预览区 */}
+            {(viewMode === 'split' || viewMode === 'preview-only') && (
+              <div className="flex-1 h-full overflow-hidden relative">
+                <CardPreview
+                  content={content}
+                  config={config}
+                  cardRef={cardRef}
+                  zoomLevel={zoomLevel}
+                  renderMode={renderMode}
+                  resetScrollTrigger={resetScrollTrigger}
+                  onPageCountChange={setPageCount}
+                  isMobile={false}
+                />
+              </div>
+            )}
+
+            {/* 右侧：外观参数抽屉 */}
+            {showSettings && (
+              <div className="w-72 h-full z-10 shrink-0 shadow-lg lg:shadow-none animate-in slide-in-from-right duration-200">
+                <SettingsPanel
+                  config={config}
+                  onChange={setConfig}
+                  onReset={() => setConfig(DEFAULT_CONFIG)}
+                  renderMode={renderMode}
+                  isMobile={false}
+                  onClose={() => setShowSettings(false)}
+                />
+              </div>
+            )}
+          </>
         )}
 
-        {/* 中间：长图画布预览区 (宽敞舒展、呼吸感充足) */}
-        {(viewMode === 'split' || viewMode === 'preview-only') && (
-          <div className="flex-1 h-full overflow-hidden relative">
-            <CardPreview
-              content={content}
-              config={config}
-              cardRef={cardRef}
-              zoomLevel={zoomLevel}
-              renderMode={renderMode}
-              resetScrollTrigger={resetScrollTrigger}
-              onPageCountChange={setPageCount}
-            />
-          </div>
-        )}
-
-        {/* 右侧：外观参数抽屉 (w-72 紧凑贴合) */}
-        {showSettings && (
-          <div className="w-72 h-full z-10 shrink-0 shadow-lg lg:shadow-none animate-in slide-in-from-right duration-200">
-            <SettingsPanel
-              config={config}
-              onChange={setConfig}
-              onReset={() => setConfig(DEFAULT_CONFIG)}
-              renderMode={renderMode}
-            />
-          </div>
+        {/* 移动端排版参数抽屉（以优雅的 Bottom Sheet 浮层呈现） */}
+        {isMobile && showSettings && (
+          <SettingsPanel
+            config={config}
+            onChange={setConfig}
+            onReset={() => setConfig(DEFAULT_CONFIG)}
+            renderMode={renderMode}
+            isMobile={true}
+            onClose={() => setShowSettings(false)}
+          />
         )}
       </main>
+
+      {/* 移动端悬浮底栏：纯净轻巧的 [编辑 | 预览] 模式切换胶囊 */}
+      {isMobile && (
+        <div
+          className="fixed bottom-3 inset-x-0 flex justify-center px-4 pointer-events-none pb-[env(safe-area-inset-bottom)]"
+          style={{ zIndex: 90 }}
+        >
+          <nav className="pointer-events-auto flex items-center bg-white/95 backdrop-blur-xl border border-neutral-200/90 shadow-xl rounded-full p-1 text-xs select-none">
+            {/* 编辑 Tab */}
+            <button
+              onClick={() => setMobileTab('editor')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+                mobileTab === 'editor'
+                  ? 'bg-black text-white font-semibold shadow-xs'
+                  : 'text-neutral-600 hover:text-black'
+              }`}
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>编辑</span>
+            </button>
+
+            {/* 预览 Tab */}
+            <button
+              onClick={() => setMobileTab('preview')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full transition-all cursor-pointer ${
+                mobileTab === 'preview'
+                  ? 'bg-black text-white font-semibold shadow-xs'
+                  : 'text-neutral-600 hover:text-black'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>预览</span>
+              {renderMode === 'paged' && pageCount > 1 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    mobileTab === 'preview'
+                      ? 'bg-neutral-800 text-neutral-300'
+                      : 'bg-neutral-100 text-neutral-600'
+                  }`}
+                >
+                  {pageCount}P
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+      )}
 
       {/* 纯粹聚焦的导出长图弹窗 */}
       <ExportModal

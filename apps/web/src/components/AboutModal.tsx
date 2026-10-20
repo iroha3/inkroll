@@ -11,11 +11,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl border border-neutral-200/80 text-neutral-800 animate-in zoom-in-95 duration-150 select-none"
+        className="bg-white rounded-2xl w-full max-w-[460px] p-5 sm:p-6 shadow-2xl border border-neutral-200/80 text-neutral-800 animate-in zoom-in-95 duration-150 select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -28,7 +28,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-base text-neutral-900 tracking-tight">墨卷 InkRoll</h3>
                 <span className="text-[11px] bg-neutral-100 border border-neutral-200/80 text-neutral-600 px-2 py-0.5 rounded-full font-mono">
-                  v1.0
+                  v1.1
                 </span>
               </div>
               <p className="text-xs text-neutral-400">墨下生花，一卷成图</p>

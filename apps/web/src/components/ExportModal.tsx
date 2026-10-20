@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileCheck,
+  Share2,
 } from 'lucide-react';
 import { renderElementToImageData, downloadDataUrl } from '../utils/exportImage';
 import { CardConfig, RenderMode } from '../types';
@@ -33,11 +34,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   renderMode,
 }) => {
   const [exportMode, setExportMode] = useState<'single' | 'social-multi'>('single');
-  const [scale, setScale] = useState<number>(3); // Default 3x Retina
-  const [format, setFormat] = useState<'png' | 'jpeg'>('png');
+  const [scale] = useState<number>(3); // Default 3x Retina
+  const [format] = useState<'png' | 'jpeg'>('png');
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
+
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   const sceneInfoMap: Record<string, { label: string; name: string; size: string }> = {
     xiaohongshu: { label: '小红书卡片', name: '小红书标准卡片 (3:4)', size: '1242×1660' },
@@ -140,7 +143,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       for (let i = 0; i < multiImages.length; i++) {
         const fileName = `inkroll_social_part${i + 1}_of_${multiImages.length}_${timestamp}.${format}`;
         downloadDataUrl(multiImages[i], fileName);
-        // 间隔 180ms，避免部分浏览器并发下载节流限制
         await new Promise((r) => setTimeout(r, 180));
       }
 
@@ -161,7 +163,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       let targetBlob: Blob | null = null;
 
       if (dataUrlToCopy) {
-        // 将已有切片 dataURL 转为 Blob
         const res = await fetch(dataUrlToCopy);
         targetBlob = await res.blob();
       } else if (renderMode === 'paged') {
@@ -195,29 +196,76 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     } catch (err: any) {
       console.error('Failed to copy image:', err);
-      alert(err.message || '复制图片失败，请直接点击下载');
+      alert(err.message || '复制图片失败，请直接点击保存图片');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // 4. 移动端原生系统分享与保存到相册
+  const handleNativeShare = async (dataUrlToShare?: string) => {
+    try {
+      setIsExporting(true);
+      let dataUrl = dataUrlToShare;
+      if (!dataUrl) {
+        if (renderMode === 'paged') {
+          dataUrl = await InkrollCore.toImage(content, {
+            ...config,
+            exportScale: scale as 2 | 3,
+            exportFormat: format,
+          });
+        } else if (cardRef.current) {
+          dataUrl = (await renderElementToImageData(
+            cardRef.current,
+            { scale, format },
+            false
+          )) as string;
+        }
+      }
+
+      if (!dataUrl) throw new Error('生成图片数据失败');
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const fileName = `inkroll_${Date.now()}.${format}`;
+      const file = new File([blob], fileName, { type: blob.type || 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: '墨卷 InkRoll 卡片',
+          text: '来自墨卷 InkRoll 排版生成的精致图文卡片',
+        });
+      } else {
+        downloadDataUrl(dataUrl, fileName);
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Share error:', err);
+        alert(err.message || '系统分享失败，已尝试直接下载保存');
+      }
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-neutral-100 relative animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-neutral-100 relative animate-in fade-in zoom-in duration-200 max-h-[92dvh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-neutral-400 hover:text-black p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-neutral-400 hover:text-black p-1.5 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-black text-white rounded-xl">
-            <ImageIcon className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-4 pr-8">
+          <div className="p-2 sm:p-2.5 bg-black text-white rounded-xl shrink-0">
+            <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-lg text-neutral-900">导出长图卡片</h3>
+            <h3 className="font-bold text-base sm:text-lg text-neutral-900">导出长图卡片</h3>
             <p className="text-xs text-neutral-500">将 Markdown 完美还原为精致出版级图片</p>
           </div>
         </div>
@@ -260,14 +308,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             ) : multiImages.length > 0 ? (
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-neutral-700 flex items-center gap-1.5">
-                    <FileCheck className="w-3.5 h-3.5 text-green-600" />
-                    {multiImages.length > 1
-                      ? `已拆分为 ${multiImages.length} 张${activeSceneInfo.name} (${activeSceneInfo.size})`
-                      : `全文篇幅精炼，单张${activeSceneInfo.name} (${activeSceneInfo.size}) 即可容纳`}
+                  <span className="font-medium text-neutral-700 flex items-center gap-1.5 text-[11px] sm:text-xs">
+                    <FileCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                    <span className="truncate">
+                      {multiImages.length > 1
+                        ? `已拆分为 ${multiImages.length} 张卡片`
+                        : `单张卡片 (${activeSceneInfo.size}) 即可容纳`}
+                    </span>
                   </span>
                   {multiImages.length > 1 && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setCurrentSlice((i) => Math.max(0, i - 1))}
                         disabled={currentSlice === 0}
@@ -292,11 +342,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </div>
 
                 {/* 切片微缩预览 */}
-                <div className="flex justify-center bg-white border border-neutral-200 rounded-lg p-2 max-h-48 overflow-hidden shadow-inner">
+                <div className="flex justify-center bg-white border border-neutral-200 rounded-lg p-2 max-h-40 sm:max-h-48 overflow-hidden shadow-inner">
                   <img
                     src={multiImages[currentSlice]}
                     alt={`Slice ${currentSlice + 1}`}
-                    className="max-h-44 object-contain rounded shadow-sm"
+                    className="max-h-36 sm:max-h-44 object-contain rounded shadow-sm"
                   />
                 </div>
               </div>
@@ -305,18 +355,34 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {exportMode === 'single' ? (
             <>
+              {/* Native System Share (Preferred on Mobile) */}
+              {canShare && (
+                <button
+                  onClick={() => handleNativeShare()}
+                  disabled={isExporting}
+                  className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer active:scale-95"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>系统分享 / 保存到相册</span>
+                </button>
+              )}
+
               {/* Primary: Copy to clipboard */}
               <button
                 onClick={() => handleCopyImage()}
                 disabled={isExporting}
-                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+                className={`w-full py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer active:scale-95 ${
+                  canShare
+                    ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
+                    : 'bg-black hover:bg-neutral-800 text-white'
+                }`}
               >
                 {copiedSuccess ? (
                   <>
-                    <Check className="w-4 h-4 text-green-400" />
+                    <Check className="w-4 h-4 text-green-500" />
                     <span>已复制到剪贴板</span>
                   </>
                 ) : (
@@ -331,7 +397,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 onClick={handleDownloadSingle}
                 disabled={isExporting}
-                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer active:scale-95"
               >
                 {isExporting ? (
                   <>
@@ -346,21 +412,37 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 ) : (
                   <>
                     <Download className="w-4 h-4 text-neutral-600" />
-                    <span>保存图片</span>
+                    <span>下载图片文件</span>
                   </>
                 )}
               </button>
             </>
           ) : (
             <>
+              {/* Native System Share for Social Slice */}
+              {canShare && (
+                <button
+                  onClick={() => handleNativeShare(multiImages[currentSlice])}
+                  disabled={isExporting || isSlicing || multiImages.length === 0}
+                  className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer active:scale-95"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>系统分享当前卡片</span>
+                </button>
+              )}
+
               <button
                 onClick={() => handleCopyImage(multiImages[currentSlice])}
                 disabled={isExporting || isSlicing || multiImages.length === 0}
-                className="w-full py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+                className={`w-full py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-60 cursor-pointer active:scale-95 ${
+                  canShare
+                    ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
+                    : 'bg-black hover:bg-neutral-800 text-white'
+                }`}
               >
                 {copiedSuccess ? (
                   <>
-                    <Check className="w-4 h-4 text-green-400" />
+                    <Check className="w-4 h-4 text-green-500" />
                     <span>已复制第 {currentSlice + 1} 张</span>
                   </>
                 ) : (
@@ -374,7 +456,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               <button
                 onClick={handleDownloadMulti}
                 disabled={isExporting || isSlicing || multiImages.length === 0}
-                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer active:scale-95"
               >
                 {isExporting ? (
                   <>

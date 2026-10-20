@@ -12,6 +12,7 @@ interface CardPreviewProps {
   renderMode: RenderMode;
   resetScrollTrigger?: number;
   onPageCountChange?: (count: number) => void;
+  isMobile?: boolean;
 }
 
 export const CardPreview: React.FC<CardPreviewProps> = ({
@@ -22,11 +23,35 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
   renderMode,
   resetScrollTrigger = 0,
   onPageCountChange,
+  isMobile = false,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const [activePage, setActivePage] = useState<number>(1);
   const [pagesTotal, setPagesTotal] = useState<number>(1);
+  const [containerWidth, setContainerWidth] = useState<number>(() => {
+    if (typeof window !== 'undefined') return window.innerWidth;
+    return 800;
+  });
+
+  // 监听容器宽度，用于移动端自适应等比缩放
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      setContainerWidth(el.clientWidth);
+    };
+
+    updateWidth();
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // 引用变量用于闭包中获取最新状态与防抖冷却锁
   const activePageRef = useRef<number>(activePage);
@@ -111,10 +136,10 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
             setActivePage((prev) => Math.min(prev, Math.max(1, total)));
           }
 
-          // 横向滑轨容器：卡片一字排开，支持卡片吸附
+          // 横向滑轨容器：卡片一字排开，移动端触控 snap 吸附
           const container = document.createElement('div');
           container.className =
-            'flex flex-row items-center gap-10 py-6 px-8 md:px-16 snap-x snap-proximity select-none';
+            'flex flex-row items-center gap-6 sm:gap-10 py-4 sm:py-6 px-4 sm:px-8 md:px-16 snap-x snap-mandatory select-none';
 
           pages.forEach((pageEl, idx) => {
             const pageWrapper = document.createElement('div');
@@ -201,23 +226,20 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
     }
   };
 
-  // 3. 逐卡单步滚轮交互（滚动一格与点击下一页/上一页效果完全一致）
+  // 3. 逐卡单步滚轮交互
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     const onWheel = (e: WheelEvent) => {
       if (renderMode !== 'paged') return;
-      if (e.ctrlKey || e.metaKey) return; // 允许触控缩放快捷键
+      if (e.ctrlKey || e.metaKey) return;
 
-      // 提取主滚动方向位移量
       const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      // 过滤微小抖动
       if (Math.abs(delta) < 18) return;
 
       e.preventDefault();
 
-      // 翻页冷却锁：在单次平滑翻页动画期间阻断连续触发，确保滚一格恰好翻一页
       if (isWheelLockedRef.current) return;
       isWheelLockedRef.current = true;
 
@@ -248,13 +270,11 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
     if (!scrollRef.current || !hostRef.current || renderMode !== 'paged' || pagesTotal <= 1) return;
     const el = scrollRef.current;
 
-    // 当滚动处于最左边缘时（容差 60px），必定是第 1 页
     if (el.scrollLeft <= 60) {
       if (activePage !== 1) setActivePage(1);
       return;
     }
 
-    // 当滚动处于最右边缘时（容差 60px），必定是最后一页
     if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 60) {
       if (activePage !== pagesTotal) setActivePage(pagesTotal);
       return;
@@ -319,37 +339,77 @@ export const CardPreview: React.FC<CardPreviewProps> = ({
     }
   };
 
+  const getCanvasBgColor = () => {
+    switch (config.canvasBg) {
+      case 'light-slate':
+        return '#f1f5f9';
+      case 'pure-white':
+        return '#ffffff';
+      case 'dark-mode':
+        return '#171717';
+      case 'grid-pattern':
+        return '#f4f4f6';
+      case 'neutral-gray':
+      default:
+        return '#f5f5f7';
+    }
+  };
+
+  // 智能计算自适应缩放比：在移动端或窄屏视口下，等比收拢使卡片刚好舒展贴合视口且保留雅致留白
+  const targetCardWidth =
+    renderMode === 'continuous'
+      ? config.cardWidth || 460
+      : 414;
+
+  const isNarrowScreen = containerWidth > 0 && containerWidth < targetCardWidth + 32;
+  const mobileAutoFitScale = isNarrowScreen
+    ? Math.max(0.35, Math.min(1, (containerWidth - 32) / targetCardWidth))
+    : 1;
+
+  const effectiveScale = (isMobile ? mobileAutoFitScale : 1) * zoomLevel;
+
+  const transformOrigin =
+    renderMode === 'continuous'
+      ? 'top center'
+      : renderMode === 'paged' && pagesTotal > 1
+      ? 'left center'
+      : 'center center';
+
   return (
-    <div className="relative w-full h-full overflow-hidden select-none">
+    <div
+      className="relative w-full h-full overflow-hidden select-none"
+      style={{ backgroundColor: getCanvasBgColor() }}
+    >
       {/* 画布滚动容器 */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
+        style={{ backgroundColor: getCanvasBgColor() }}
         className={`w-full h-full overflow-auto overscroll-contain scroll-smooth transition-colors duration-200 ${getCanvasBgClass()}`}
       >
         <div
-          className={`min-w-full min-h-full flex items-center p-6 md:p-10 ${
+          className={`min-w-full min-h-full flex items-center ${
             renderMode === 'paged' && pagesTotal > 1
-              ? 'justify-start w-max'
-              : 'justify-center flex-col'
+              ? 'justify-start w-max px-4 sm:px-8 py-4 sm:py-6 pb-28 sm:pb-8'
+              : 'justify-center flex-col px-3 sm:px-6 md:px-10 pb-28 sm:pb-10 pt-3 sm:pt-6'
           }`}
+          style={{ minHeight: '100%' }}
         >
           <div
             style={{
-              transform: `scale(${zoomLevel})`,
-              transformOrigin:
-                renderMode === 'paged' && pagesTotal > 1 ? 'left center' : 'top center',
+              transform: `scale(${effectiveScale})`,
+              transformOrigin,
             }}
-            className="transition-transform duration-200 my-auto py-2"
+            className="transition-transform duration-200 my-auto flex flex-col items-center justify-center"
           >
             <div ref={hostRef} className="box-border" />
           </div>
         </div>
       </div>
 
-      {/* 分页模式专属：底部浮动悬浮卡片导航指示器 */}
+      {/* 分页模式专属：底部浮动悬浮卡片导航指示器（移动端避让底部操作栏） */}
       {renderMode === 'paged' && pagesTotal > 1 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-neutral-200/80 text-xs select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="absolute bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-neutral-200/80 text-xs select-none animate-in fade-in slide-in-from-bottom-2 duration-200">
           <button
             onClick={() => goToPage(activePage - 1)}
             disabled={activePage === 1}
